@@ -77,12 +77,13 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
     .AddDefaultTokenProviders();
 
 builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("SmtpSettings"));
-builder.Services.AddScoped<IEmailSender<ApplicationUser>, SmtpEmailSender>();
+builder.Services.AddTransient<IEmailSender<ApplicationUser>, SmtpEmailSender>();
 builder.Services.AddInfrastructure(builder.Configuration);
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IDashboardApiService, ServerDashboardApiService>();
 builder.Services.AddScoped<IProfileClientService, ServerProfileClientService>();
+builder.Services.AddScoped<IAccountClientService, ServerAccountClientService>();
 
 WebApplication? app = builder.Build();
 

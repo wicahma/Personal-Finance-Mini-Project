@@ -57,9 +57,22 @@ public sealed class AccountsController : BaseApiController
         if (existing is null || existing.UserProfileId != profileId)
             return NotFound(PersonalFinance.Application.Common.ApiResponse<object>.Failure("Account not found."));
 
-        var dto = new UpdateAccountDto(id, req.Name, req.Type ?? existing.Type, req.IsArchived);
+        var dto = new UpdateAccountDto(id, req.Name, req.IsArchived);
         var account = await _accountService.UpdateAsync(dto, ct);
         return OkData(account, "Account updated successfully.");
+    }
+
+    // PATCH /api/accounts/{id}/archive
+    [HttpPatch("{id:guid}/archive")]
+    public async Task<IActionResult> ArchiveAccount(Guid id, CancellationToken ct)
+    {
+        var profileId = await GetUserProfileIdAsync(_profileService, ct);
+        var existing = await _accountService.GetByIdAsync(id, ct);
+        if (existing is null || existing.UserProfileId != profileId)
+            return NotFound(PersonalFinance.Application.Common.ApiResponse<object>.Failure("Account not found."));
+
+        await _accountService.ArchiveAccountAsync(id, ct);
+        return OkData<object?>(null, "Account archived successfully.");
     }
 
     // DELETE /api/accounts/{id}
@@ -77,4 +90,4 @@ public sealed class AccountsController : BaseApiController
 }
 
 public record CreateAccountRequest(string Name, AccountType Type, decimal InitialBalance = 0m);
-public record UpdateAccountRequest(string Name, bool IsArchived, AccountType? Type = null);
+public record UpdateAccountRequest(string Name, bool IsArchived);

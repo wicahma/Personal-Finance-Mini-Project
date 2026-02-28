@@ -21,5 +21,4 @@ public record CreateAccountDto(
 public record UpdateAccountDto(
     Guid Id,
     string Name,
-    AccountType Type,
     bool IsArchived);
