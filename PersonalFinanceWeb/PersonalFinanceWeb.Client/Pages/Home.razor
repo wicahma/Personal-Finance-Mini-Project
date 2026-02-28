@@ -1,7 +1,49 @@
 ﻿@page "/"
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Dashboard — FinanceOS</PageTitle>
 
-<h1>Hello, world!</h1>
+<div class="space-y-8">
 
-Welcome to your new app.
+    <!-- Header -->
+    <div>
+        <h1 class="text-4xl font-black uppercase tracking-tight text-soft-white">Dashboard</h1>
+        <p class="text-gray-400 mt-1 text-sm font-medium">
+            @DateTime.Now.ToString("dddd, MMMM dd yyyy")
+        </p>
+    </div>
+
+    <!-- Summary cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+        <NeubrutalistCard Variant="NeubrutalistCard.CardVariant.Neon" Title="Net Worth">
+            <p class="text-3xl font-black text-neon">$0.00</p>
+            <p class="text-xs text-gray-400 mt-2 uppercase tracking-widest">Across all accounts</p>
+        </NeubrutalistCard>
+
+        <NeubrutalistCard Variant="NeubrutalistCard.CardVariant.Yellow" Title="Income This Month">
+            <p class="text-3xl font-black text-vivid-yellow">$0.00</p>
+            <p class="text-xs text-gray-400 mt-2 uppercase tracking-widest">@DateTime.Now.ToString("MMMM yyyy")</p>
+        </NeubrutalistCard>
+
+        <NeubrutalistCard Variant="NeubrutalistCard.CardVariant.Pink" Title="Expenses This Month">
+            <p class="text-3xl font-black text-hot-pink">$0.00</p>
+            <p class="text-xs text-gray-400 mt-2 uppercase tracking-widest">@DateTime.Now.ToString("MMMM yyyy")</p>
+        </NeubrutalistCard>
+
+    </div>
+
+    <!-- Quick actions -->
+    <NeubrutalistCard Title="Quick Actions">
+        <div class="flex flex-wrap gap-4">
+            <NeubrutalistButton Text="Add Transaction" Variant="NeubrutalistButton.ButtonVariant.Primary" />
+            <NeubrutalistButton Text="Transfer" Variant="NeubrutalistButton.ButtonVariant.Secondary" />
+            <NeubrutalistButton Text="Add Account" Variant="NeubrutalistButton.ButtonVariant.Ghost" />
+        </div>
+    </NeubrutalistCard>
+
+    <!-- Recent transactions placeholder -->
+    <NeubrutalistCard Title="Recent Transactions">
+        <p class="text-gray-500 text-sm italic">No transactions yet. Add your first one above.</p>
+    </NeubrutalistCard>
+
+</div>

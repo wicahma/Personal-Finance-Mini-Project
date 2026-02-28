@@ -1,0 +1,55 @@
+@* NeubrutalistInput — Dark Neubrutalism styled text input *@
+
+<div class="flex flex-col gap-1">
+    @if (!string.IsNullOrWhiteSpace(Label))
+    {
+        <label class="text-xs font-bold uppercase tracking-widest text-soft-white">@Label</label>
+    }
+    <input type="@Type"
+           value="@Value"
+           placeholder="@Placeholder"
+           disabled="@Disabled"
+           class="@ComputedClass"
+           @oninput="HandleInput"
+           @onchange="HandleChange" />
+    @if (!string.IsNullOrWhiteSpace(Error))
+    {
+        <span class="text-hot-pink text-xs font-semibold">@Error</span>
+    }
+</div>
+
+@code {
+    [Parameter] public string? Label { get; set; }
+    [Parameter] public string Value { get; set; } = string.Empty;
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+    [Parameter] public string Type { get; set; } = "text";
+    [Parameter] public string? Placeholder { get; set; }
+    [Parameter] public string? Error { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public string? ExtraClass { get; set; }
+
+    private string ComputedClass => string.Join(" ", new[]
+    {
+        "w-full bg-base-bg text-soft-white",
+        "border-2 px-4 py-2.5 font-medium",
+        "placeholder:text-gray-600",
+        "focus:outline-none",
+        "transition-colors duration-100",
+        Disabled ? "cursor-not-allowed opacity-50" : string.Empty,
+        !string.IsNullOrWhiteSpace(Error) ? "border-hot-pink focus:border-hot-pink" : "border-base-border focus:border-neon",
+        ExtraClass ?? string.Empty
+    }.Where(s => !string.IsNullOrWhiteSpace(s)));
+
+    private async Task HandleInput(ChangeEventArgs e)
+    {
+        var val = e.Value?.ToString() ?? string.Empty;
+        await ValueChanged.InvokeAsync(val);
+    }
+
+    private async Task HandleChange(ChangeEventArgs e)
+    {
+        var val = e.Value?.ToString() ?? string.Empty;
+        if (val != Value)
+            await ValueChanged.InvokeAsync(val);
+    }
+}

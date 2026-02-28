@@ -6,15 +6,35 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>aspnet-PersonalFinanceWeb-ac189582-92c6-46a5-8567-dc54d9efe6ae</UserSecretsId>
     <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
+    <!-- Tailwind Standalone CLI path (relative to solution root) -->
+    <TailwindExe>$(MSBuildThisFileDirectory)..\..\tools\tailwindcss.exe</TailwindExe>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\PersonalFinanceWeb.Client\PersonalFinanceWeb.Client.csproj" />
+    <ProjectReference Include="..\..\PersonalFinance.Infrastructure\PersonalFinance.Infrastructure.csproj" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="10.0.3" />
     <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="10.0.3" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.3" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.3" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.3" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.3">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.3">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
   </ItemGroup>
+
+  <!-- Tailwind CSS build integration (Standalone CLI, no Node.js) -->
+  <Target Name="Tailwind" BeforeTargets="Build" Condition="Exists('$(TailwindExe)')">
+    <PropertyGroup>
+      <TailwindMinify Condition="'$(Configuration)' == 'Release'">--minify</TailwindMinify>
+      <TailwindMinify Condition="'$(Configuration)' != 'Release'"></TailwindMinify>
+    </PropertyGroup>
+    <Exec Command="&quot;$(TailwindExe)&quot; -c tailwind.config.cjs -i wwwroot/tailwind.input.css -o wwwroot/app.css $(TailwindMinify)"
+          WorkingDirectory="$(MSBuildThisFileDirectory)" />
+  </Target>
 
 </Project>

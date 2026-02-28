@@ -1,4 +1,7 @@
 <Solution>
-  <Project Path="PersonalFinanceWeb/PersonalFinanceWeb.Client/PersonalFinanceWeb.Client.csproj" />
-  <Project Path="PersonalFinanceWeb/PersonalFinanceWeb/PersonalFinanceWeb.csproj" />
+  <Project Path="PersonalFinance.Domain\PersonalFinance.Domain.csproj" />
+  <Project Path="PersonalFinance.Application\PersonalFinance.Application.csproj" />
+  <Project Path="PersonalFinance.Infrastructure\PersonalFinance.Infrastructure.csproj" />
+  <Project Path="PersonalFinanceWeb\PersonalFinanceWeb\PersonalFinanceWeb.csproj" />
+  <Project Path="PersonalFinanceWeb\PersonalFinanceWeb.Client\PersonalFinanceWeb.Client.csproj" />
 </Solution>

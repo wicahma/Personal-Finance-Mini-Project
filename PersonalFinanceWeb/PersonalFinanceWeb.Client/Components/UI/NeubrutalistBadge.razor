@@ -1,0 +1,11 @@
+@* NeubrutalistBadge — inline tag/badge with a hard-shadow accent *@
+
+<span class="inline-flex items-center px-2.5 py-0.5 border-2 text-xs font-black uppercase tracking-wider"
+      style="border-color: @Color; box-shadow: 2px 2px 0px @Color; color: @Color;">
+    @Text
+</span>
+
+@code { 
+    [Parameter, EditorRequired] public string Text { get; set; } = string.Empty;
+    [Parameter] public string Color { get; set; } = "#39FF14";
+}

@@ -1,0 +1,57 @@
+@* NeubrutalistAlert — contextual alert / toast banner *@
+
+@if (IsVisible)
+{
+    <div class="@ComputedClass" role="alert">
+        <div class="flex items-start gap-3">
+            <span class="text-lg font-black">@SeverityIcon</span>
+            <div class="flex-1">
+                @if (!string.IsNullOrWhiteSpace(Title))
+                {
+                    <p class="font-black uppercase tracking-widest text-sm mb-0.5">@Title</p>
+                }
+                <p class="text-sm">@Message</p>
+            </div>
+            @if (Dismissible)
+            {
+                <button class="text-current opacity-60 hover:opacity-100 font-black text-lg leading-none"
+                        @onclick="Dismiss">✕</button>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    public enum AlertSeverity { Info, Success, Warning, Error }
+
+    [Parameter, EditorRequired] public string Message { get; set; } = string.Empty;
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public AlertSeverity Severity { get; set; } = AlertSeverity.Info;
+    [Parameter] public bool Dismissible { get; set; } = true;
+
+    private bool IsVisible { get; set; } = true;
+
+    private void Dismiss() => IsVisible = false;
+
+    private string ComputedClass => string.Join(" ", new[]
+    {
+        "border-2 p-4",
+        SeverityClass
+    });
+
+    private string SeverityClass => Severity switch
+    {
+        AlertSeverity.Success => "border-neon text-neon shadow-brutal-green bg-base-surface",
+        AlertSeverity.Warning => "border-vivid-yellow text-vivid-yellow shadow-brutal-yellow bg-base-surface",
+        AlertSeverity.Error   => "border-hot-pink text-hot-pink shadow-brutal-pink bg-base-surface",
+        _                     => "border-base-border text-soft-white shadow-brutal-white bg-base-surface"
+    };
+
+    private string SeverityIcon => Severity switch
+    {
+        AlertSeverity.Success => "✓",
+        AlertSeverity.Warning => "⚠",
+        AlertSeverity.Error   => "✕",
+        _                     => "ℹ"
+    };
+}

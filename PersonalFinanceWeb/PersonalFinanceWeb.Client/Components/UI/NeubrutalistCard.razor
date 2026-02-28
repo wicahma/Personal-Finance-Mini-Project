@@ -1,0 +1,42 @@
+@* NeubrutalistCard — Dark Neubrutalism styled card container *@
+
+<div class="@ComputedClass">
+    @if (!string.IsNullOrWhiteSpace(Title))
+    {
+        <h3 class="text-lg font-black uppercase tracking-widest mb-4 text-soft-white">@Title</h3>
+    }
+    @ChildContent
+</div>
+
+@code {
+    public enum CardVariant { Default, Neon, Yellow, Pink }
+
+    [Parameter, EditorRequired] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public CardVariant Variant { get; set; } = CardVariant.Default;
+    [Parameter] public string? ExtraClass { get; set; }
+
+    private string ComputedClass => string.Join(" ", new[]
+    {
+        "bg-base-surface border-2 p-6",
+        BorderClass,
+        ShadowClass,
+        ExtraClass ?? string.Empty
+    }.Where(s => !string.IsNullOrWhiteSpace(s)));
+
+    private string BorderClass => Variant switch
+    {
+        CardVariant.Neon    => "border-neon",
+        CardVariant.Yellow  => "border-vivid-yellow",
+        CardVariant.Pink    => "border-hot-pink",
+        _                   => "border-base-border"
+    };
+
+    private string ShadowClass => Variant switch
+    {
+        CardVariant.Neon    => "shadow-brutal-green",
+        CardVariant.Yellow  => "shadow-brutal-yellow",
+        CardVariant.Pink    => "shadow-brutal-pink",
+        _                   => "shadow-brutal-white"
+    };
+}

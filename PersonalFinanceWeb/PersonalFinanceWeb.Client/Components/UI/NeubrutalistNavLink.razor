@@ -1,0 +1,27 @@
+@* NeubrutalistNavLink — sidebar navigation link with active state *@
+@using Microsoft.AspNetCore.Components.Routing
+
+<NavLink href="@Href"
+         Match="@Match"
+         ActiveClass="text-neon border-l-4 border-neon bg-base-surface"
+         class="@BaseClass">
+    @if (Icon is not null)
+    {
+        <span class="w-5 h-5 flex-shrink-0">@Icon</span>
+    }
+    <span>@Text</span>
+</NavLink>
+
+@code {
+    [Parameter, EditorRequired] public string Href { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public string Text { get; set; } = string.Empty;
+    [Parameter] public NavLinkMatch Match { get; set; } = NavLinkMatch.Prefix;
+    [Parameter] public RenderFragment? Icon { get; set; }
+
+    private const string BaseClass =
+        "flex items-center gap-3 px-4 py-3 " +
+        "text-sm font-bold uppercase tracking-widest " +
+        "border-l-4 border-transparent " +
+        "text-gray-400 hover:text-soft-white hover:border-base-border " +
+        "transition-colors duration-100";
+}

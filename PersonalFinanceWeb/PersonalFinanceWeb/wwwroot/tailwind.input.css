@@ -1,0 +1,56 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* =====================================================
+   Dark Neubrutalism — base overrides
+   ===================================================== */
+@layer base {
+  html {
+    @apply bg-base-bg text-soft-white;
+    font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+  }
+
+  body {
+    @apply bg-base-bg text-soft-white min-h-screen;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #0a0a0a;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #2a2a2a;
+    border-radius: 0;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #39ff14;
+  }
+}
+
+/* Blazor reconnect / error overlay */
+#blazor-error-ui {
+  @apply fixed bottom-0 left-0 right-0 z-50 p-4;
+  @apply bg-base-surface border-t-2 border-hot-pink text-soft-white;
+  display: none;
+}
+#blazor-error-ui.blazor-error-boundary {
+  display: block;
+}
+#blazor-error-ui .dismiss {
+  @apply cursor-pointer float-right text-hot-pink;
+}
+
+/* Form validation (Blazor default classes) */
+.valid.modified:not([type="checkbox"]) {
+  outline: 2px solid #39ff14;
+}
+.invalid {
+  outline: 2px solid #ff2d78;
+}
+.validation-message {
+  @apply text-hot-pink text-sm mt-1;
+}
