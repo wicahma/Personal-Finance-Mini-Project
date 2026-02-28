@@ -73,9 +73,14 @@
                             @context.User.Identity?.Name
                         </span>
                     </div>
-                    <a href="Account/Logout" class="text-xs font-bold uppercase tracking-widest text-gray-500 hover:text-hot-pink transition-colors">
-                        Logout
-                    </a>
+                    <form action="Account/Logout" method="post" class="inline">
+                        <AntiforgeryToken />
+                        <input type="hidden" name="returnUrl" value="Account/Login" />
+                        <button type="submit"
+                                class="text-xs font-bold uppercase tracking-widest text-gray-500 hover:text-hot-pink transition-colors bg-transparent border-none p-0 cursor-pointer">
+                            Logout
+                        </button>
+                    </form>
                 </Authorized>
             </AuthorizeView>
         </div>

@@ -1,5 +1,6 @@
 ﻿@page "/"
 @rendermode InteractiveAuto
+@attribute [Authorize]
 
 @inject IDashboardApiService DashboardService
 @inject IJSRuntime JS
@@ -7,16 +8,14 @@
 <PageTitle>Dashboard — FinanceOS</PageTitle>
 
 <div class="space-y-8">
-
-    @* ====== PAGE HEADER ====== *@
+ 
     <div>
         <h1 class="text-4xl font-black uppercase tracking-tight text-soft-white">Dashboard</h1>
         <p class="text-gray-400 mt-1 text-sm font-medium tracking-wider">
             @DateTime.Now.ToString("dddd, MMMM dd yyyy")
         </p>
     </div>
-
-    @* ====== FILTER BAR ====== *@
+ 
     <div class="bg-base-surface border-2 border-base-border p-5 shadow-brutal-white">
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 items-end">
 
@@ -84,10 +83,8 @@
         </div>
     </div>
 
-    @* ====== SUMMARY CARDS ====== *@
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
 
-        @* Income Card *@
         <div class="bg-base-surface border-2 border-neon shadow-brutal-green p-6">
             <div class="flex items-center justify-between mb-4">
                 <span class="text-xs font-black uppercase tracking-widest text-gray-400">Total Income</span>
@@ -108,7 +105,6 @@
             <p class="text-xs text-gray-500 mt-3 uppercase tracking-widest">Receipts in period</p>
         </div>
 
-        @* Expenses Card *@
         <div class="bg-base-surface border-2 border-hot-pink shadow-brutal-pink p-6">
             <div class="flex items-center justify-between mb-4">
                 <span class="text-xs font-black uppercase tracking-widest text-gray-400">Total Expenses</span>
@@ -129,7 +125,6 @@
             <p class="text-xs text-gray-500 mt-3 uppercase tracking-widest">Spending in period</p>
         </div>
 
-        @* Net Cash Flow Card *@
         <div class="bg-base-surface border-2 border-vivid-yellow shadow-brutal-yellow p-6">
             <div class="flex items-center justify-between mb-4">
                 <span class="text-xs font-black uppercase tracking-widest text-gray-400">Net Cash Flow</span>
@@ -155,7 +150,6 @@
 
     </div>
 
-    @* ====== TOP SPENDING CHART ====== *@
     <div class="bg-base-surface border-2 border-base-border shadow-brutal-white p-6">
         <div class="flex items-center justify-between mb-6">
             <h3 class="text-lg font-black uppercase tracking-widest text-soft-white">Top Spending Categories</h3>
@@ -190,7 +184,6 @@
                 <canvas id="topCategoriesChart"></canvas>
             </div>
 
-            @* Legend Table *@
             <div class="mt-6 border-t-2 border-base-border pt-5 grid grid-cols-1 sm:grid-cols-2 gap-2">
                 @foreach (var (item, idx) in _chartData.Select((x, i) => (x, i)))
                 {
@@ -210,7 +203,6 @@
         }
     </div>
 
-    @* ====== QUICK ACTIONS ====== *@
     <div class="bg-base-surface border-2 border-base-border shadow-brutal-white p-6">
         <h3 class="text-lg font-black uppercase tracking-widest text-soft-white mb-4">Quick Actions</h3>
         <div class="flex flex-wrap gap-4">
@@ -223,7 +215,6 @@
 </div>
 
 @code {
-    // ── Filter state ──────────────────────────────────────────
     private DateTime? _startDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
     private DateTime? _endDate   = DateTime.Now.Date;
     private string _startDateStr => _startDate?.ToString("yyyy-MM-dd") ?? string.Empty;
@@ -237,21 +228,18 @@
     private Guid? SelectedCategoryId => Guid.TryParse(_selectedCategoryIdStr, out var g) ? g : null;
     private Guid? SelectedTagId      => Guid.TryParse(_selectedTagIdStr,      out var g) ? g : null;
 
-    // ── Data state ────────────────────────────────────────────
     private DashboardSummaryModel? _summary;
     private IReadOnlyList<ChartDataModel> _chartData  = Array.Empty<ChartDataModel>();
     private IReadOnlyList<AccountModel>   _accounts   = Array.Empty<AccountModel>();
     private IReadOnlyList<CategoryModel>  _categories = Array.Empty<CategoryModel>();
     private IReadOnlyList<TagModel>       _tags       = Array.Empty<TagModel>();
 
-    // ── UI state ──────────────────────────────────────────────
     private bool _isLoading;
     private bool _pendingChartRender;
 
     private static readonly string[] _accentColors =
         { "#39FF14", "#FF2D78", "#FFE600", "#00D4FF", "#FF6B35", "#C084FC", "#FB923C", "#34D399" };
 
-    // ── Lifecycle ─────────────────────────────────────────────
     protected override async Task OnInitializedAsync()
     {
         await Task.WhenAll(
@@ -270,7 +258,6 @@
         }
     }
 
-    // ── Data loading ──────────────────────────────────────────
     private async Task LoadDropdownsAsync()
     {
         var accountTask  = DashboardService.GetAccountsAsync();
@@ -306,14 +293,12 @@
         }
     }
 
-    // ── Event handlers ────────────────────────────────────────
     private void OnStartDateChange(string? value)
         => _startDate = DateTime.TryParse(value, out var d) ? d : null;
 
     private void OnEndDateChange(string? value)
         => _endDate = DateTime.TryParse(value, out var d) ? d : null;
 
-    // ── Chart.js integration ──────────────────────────────────
     private async Task RenderChartJsAsync()
     {
         var labels = _chartData.Select(d => d.CategoryName).ToArray();
@@ -334,7 +319,6 @@
         }
     }
 
-    // ── Helpers ───────────────────────────────────────────────
     private static string FormatCurrency(decimal amount)
         => amount.ToString("C2", System.Globalization.CultureInfo.CreateSpecificCulture("en-US"));
 

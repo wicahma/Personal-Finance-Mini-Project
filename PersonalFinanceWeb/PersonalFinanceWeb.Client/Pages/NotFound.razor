@@ -1,5 +1,51 @@
-﻿@page "/not-found"
+﻿@page "/{**path}"
+@page "/not-found"
 @layout MainLayout
 
-<h3>Not Found</h3>
-<p>Sorry, the content you are looking for does not exist.</p>
+<PageTitle>404 — FinanceOS</PageTitle>
+
+<div class="flex flex-col items-center justify-center min-h-full py-16 text-center">
+
+    <div class="mb-6">
+        <span class="text-[10rem] font-black leading-none text-neon"
+              style="text-shadow: 6px 6px 0px #39FF14; -webkit-text-stroke: 2px #39FF14; color: transparent;">
+            404
+        </span>
+    </div>
+
+    <div class="bg-base-surface border-2 border-base-border shadow-brutal-green p-8 max-w-lg w-full">
+
+        <p class="text-xs font-bold uppercase tracking-widest text-hot-pink mb-3">Error</p>
+
+        <h1 class="text-2xl font-black uppercase tracking-widest text-soft-white mb-4">
+            Page Not Found
+        </h1>
+
+        <p class="text-gray-400 text-sm mb-8 leading-relaxed">
+            The page you are looking for does not exist or has been moved.<br />
+            Double-check the URL or navigate back to safety.
+        </p>
+
+        <div class="flex flex-col sm:flex-row gap-3 justify-center">
+            <a href="/"
+               class="bg-neon text-black font-black uppercase tracking-widest py-3 px-6 border-2 border-black shadow-brutal-green hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-none active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all duration-100 text-sm">
+                Go to Dashboard
+            </a>
+            <button onclick="history.back()"
+                    class="border-2 border-base-border text-soft-white font-bold uppercase tracking-widest py-3 px-6 bg-base-bg shadow-brutal-white hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-none active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all duration-100 text-sm">
+                Go Back
+            </button>
+        </div>
+
+    </div>
+
+    <p class="text-gray-600 text-xs uppercase tracking-widest mt-8">
+        FinanceOS &mdash; Personal Finance Tracker
+    </p>
+
+</div>
+
+@code {
+    [Parameter]
+    public string? path { get; set; }
+}

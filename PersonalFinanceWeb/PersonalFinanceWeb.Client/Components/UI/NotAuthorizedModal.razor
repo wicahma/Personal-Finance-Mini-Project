@@ -1,0 +1,74 @@
+@inject NavigationManager NavigationManager
+@implements IAsyncDisposable
+
+<div class="fixed inset-0 z-50 flex items-center justify-center">
+
+    <div class="absolute inset-0 bg-base-bg/80 backdrop-blur-sm"></div>
+
+    <div class="relative z-10 bg-base-surface border-2 border-hot-pink shadow-brutal-pink p-8 max-w-md w-full mx-4">
+        <div class="text-center">
+
+            <p class="text-xs font-bold uppercase tracking-widest text-hot-pink mb-4">Access Denied</p>
+
+            <div class="text-8xl font-black text-neon leading-none mb-6"
+                 style="text-shadow: 4px 4px 0px #39FF14;">
+                @_countdown
+            </div>
+
+            <h2 class="text-xl font-black uppercase tracking-widest text-soft-white mb-3">
+                Not Logged In
+            </h2>
+
+            <p class="text-gray-400 text-sm mb-2 leading-relaxed">
+                You are not logged in. Please login first to access this content.
+            </p>
+
+            <p class="text-gray-600 text-xs uppercase tracking-widest mb-8">
+                Redirecting to login in @_countdown second@(_countdown == 1 ? "" : "s")...
+            </p>
+
+            <button @onclick="GoToLogin"
+                    class="w-full bg-neon text-black font-black uppercase tracking-widest py-3 border-2 border-black shadow-brutal-green hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-none active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all duration-100">
+                Login Now
+            </button>
+
+        </div>
+    </div>
+
+</div>
+
+@code {
+    private int _countdown = 5;
+    private CancellationTokenSource _cts = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            while (_countdown > 0)
+            {
+                await Task.Delay(1000, _cts.Token);
+                _countdown--;
+                StateHasChanged();
+            }
+
+            GoToLogin();
+        }
+        catch (OperationCanceledException)
+        {
+            // Component was disposed before countdown finished
+        }
+    }
+
+    private void GoToLogin()
+    {
+        NavigationManager.NavigateTo("Account/Login", forceLoad: true);
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        _cts.Cancel();
+        _cts.Dispose();
+        return ValueTask.CompletedTask;
+    }
+}
