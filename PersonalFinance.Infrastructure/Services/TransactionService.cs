@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using PersonalFinance.Application.Common;
 using PersonalFinance.Application.DTOs;
 using PersonalFinance.Application.Services;
 using PersonalFinance.Domain.Abstractions;
@@ -19,10 +20,53 @@ public sealed class TransactionService : ITransactionService
         _db = db;
     }
 
+    public async Task<TransactionDetailDto?> GetDetailByIdAsync(Guid id, CancellationToken ct = default)
+    {
+        var e = await _db.Transactions
+            .Include(x => x.Account)
+            .Include(x => x.Category)
+            .Include(x => x.TransactionTags).ThenInclude(x => x.Tag)
+            .FirstOrDefaultAsync(x => x.Id == id, ct);
+        return e is null ? null : MapToDetailDto(e);
+    }
+
     public async Task<TransactionDto?> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
         var e = await _repo.GetByIdAsync(id, ct);
         return e is null ? null : MapToDto(e);
+    }
+
+    public async Task<PagedList<TransactionDto>> GetPagedAsync(Guid userProfileId, TransactionQueryDto query, CancellationToken ct = default)
+    {
+        var q = _db.Transactions
+            .Include(x => x.Account)
+            .Include(x => x.Category)
+            .Include(x => x.TransactionTags).ThenInclude(x => x.Tag)
+            .Where(x => x.UserProfileId == userProfileId);
+
+        if (query.StartDate.HasValue) q = q.Where(x => x.Date >= query.StartDate.Value);
+        if (query.EndDate.HasValue) q = q.Where(x => x.Date <= query.EndDate.Value);
+        if (query.AccountId.HasValue) q = q.Where(x => x.AccountId == query.AccountId.Value);
+        if (query.CategoryId.HasValue) q = q.Where(x => x.CategoryId == query.CategoryId.Value);
+        if (query.TagId.HasValue) q = q.Where(x => x.TransactionTags.Any(tt => tt.TagId == query.TagId.Value));
+
+        var totalItems = await q.CountAsync(ct);
+        var page = Math.Max(1, query.Page);
+        var pageSize = Math.Clamp(query.PageSize, 1, 100);
+
+        var items = await q
+            .OrderByDescending(x => x.Date)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(ct);
+
+        return new PagedList<TransactionDto>
+        {
+            Items = items.Select(MapToDto).ToList(),
+            CurrentPage = page,
+            PageSize = pageSize,
+            TotalItems = totalItems
+        };
     }
 
     public async Task<IReadOnlyList<TransactionDto>> GetByUserProfileIdAsync(Guid userProfileId, CancellationToken ct = default)
@@ -196,6 +240,21 @@ public sealed class TransactionService : ITransactionService
         return new TransactionDto(
             e.Id, e.UserProfileId, e.AccountId, e.Account?.Name ?? string.Empty,
             e.CategoryId, e.Category?.Name,
+            e.Amount, e.Date, e.Notes, e.Type,
+            e.IsTransfer, e.TransferPairId,
+            tags, e.CreatedAt, e.UpdatedAt);
+    }
+
+    private static TransactionDetailDto MapToDetailDto(Transaction e)
+    {
+        var tags = e.TransactionTags
+            .Select(tt => new TagDto(tt.Tag.Id, tt.Tag.UserProfileId, tt.Tag.Name, tt.Tag.Color,
+                tt.Tag.CreatedAt, tt.Tag.UpdatedAt))
+            .ToList();
+
+        return new TransactionDetailDto(
+            e.Id, e.UserProfileId, e.AccountId, e.Account?.Name ?? string.Empty,
+            e.CategoryId, e.Category?.Name, e.Category?.IconOrColor,
             e.Amount, e.Date, e.Notes, e.Type,
             e.IsTransfer, e.TransferPairId,
             tags, e.CreatedAt, e.UpdatedAt);

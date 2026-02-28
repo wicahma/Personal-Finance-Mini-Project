@@ -1,10 +1,13 @@
+using PersonalFinance.Application.Common;
 using PersonalFinance.Application.DTOs;
 
 namespace PersonalFinance.Application.Services;
 
 public interface ITransactionService
 {
+    Task<TransactionDetailDto?> GetDetailByIdAsync(Guid id, CancellationToken ct = default);
     Task<TransactionDto?> GetByIdAsync(Guid id, CancellationToken ct = default);
+    Task<PagedList<TransactionDto>> GetPagedAsync(Guid userProfileId, TransactionQueryDto query, CancellationToken ct = default);
     Task<IReadOnlyList<TransactionDto>> GetByUserProfileIdAsync(Guid userProfileId, CancellationToken ct = default);
     Task<IReadOnlyList<TransactionDto>> GetByAccountIdAsync(Guid accountId, CancellationToken ct = default);
     Task<IReadOnlyList<TransactionDto>> GetByMonthAsync(Guid userProfileId, int year, int month, CancellationToken ct = default);
