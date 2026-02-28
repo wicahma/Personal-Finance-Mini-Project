@@ -34,6 +34,8 @@ public static class InfrastructureServiceExtensions
         services.AddScoped<ITagService, TagService>();
         services.AddScoped<ITransactionService, TransactionService>();
         services.AddScoped<IBudgetService, BudgetService>();
+        services.AddScoped<IUserProfileService, UserProfileService>();
+        services.AddScoped<IReportService, ReportService>();
 
         return services;
     }
