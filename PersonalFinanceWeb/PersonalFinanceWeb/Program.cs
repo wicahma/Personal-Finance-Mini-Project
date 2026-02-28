@@ -76,11 +76,13 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
     .AddSignInManager()
     .AddDefaultTokenProviders();
 
-builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
+builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("SmtpSettings"));
+builder.Services.AddScoped<IEmailSender<ApplicationUser>, SmtpEmailSender>();
 builder.Services.AddInfrastructure(builder.Configuration);
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IDashboardApiService, ServerDashboardApiService>();
+builder.Services.AddScoped<IProfileClientService, ServerProfileClientService>();
 
 WebApplication? app = builder.Build();
 
@@ -104,6 +106,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseAntiforgery();
 
+app.MapIdentityApi<ApplicationUser>();
 app.MapControllers();
 app.MapStaticAssets();
 app.MapRazorComponents<App>()

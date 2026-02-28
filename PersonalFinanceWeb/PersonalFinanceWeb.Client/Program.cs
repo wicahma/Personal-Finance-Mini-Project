@@ -14,5 +14,6 @@ builder.Services.AddScoped(sp =>
 });
 
 builder.Services.AddScoped<IDashboardApiService, HttpDashboardApiService>();
+builder.Services.AddScoped<IProfileClientService, HttpProfileClientService>();
 
 await builder.Build().RunAsync();

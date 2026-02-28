@@ -1,0 +1,214 @@
+@page "/profile"
+@rendermode InteractiveAuto
+@attribute [Authorize]
+
+@inject IProfileClientService ProfileService
+@inject AuthenticationStateProvider AuthStateProvider
+
+<PageTitle>Profile — FinanceOS</PageTitle>
+
+<div class="space-y-8">
+
+    @* Header *@
+    <div>
+        <h1 class="text-4xl font-black uppercase tracking-tight text-soft-white">Profile</h1>
+        <p class="text-gray-400 mt-1 text-sm font-medium tracking-wider">Manage your account settings</p>
+    </div>
+
+    @if (_loading)
+    {
+        <div class="flex items-center gap-3 text-gray-400">
+            <svg class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+            </svg>
+            <span class="text-sm font-semibold uppercase tracking-widest">Loading profile…</span>
+        </div>
+    }
+    else
+    {
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+            @* Identity card (read-only) *@
+            <div class="lg:col-span-1">
+                <NeubrutalistCard Title="Account" Variant="NeubrutalistCard.CardVariant.Neon">
+                    <div class="space-y-5">
+                        <div class="flex items-center justify-center">
+                            <div class="w-20 h-20 border-2 border-neon shadow-brutal-green flex items-center justify-center bg-base-bg">
+                                <span class="text-neon font-black text-3xl">
+                                    @(_email?.Substring(0, 1).ToUpper() ?? "U")
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="space-y-1">
+                            <p class="text-xs font-bold uppercase tracking-widest text-gray-500">Email</p>
+                            <p class="text-soft-white font-semibold text-sm break-all">@_email</p>
+                        </div>
+
+                        <div class="space-y-1">
+                            <p class="text-xs font-bold uppercase tracking-widest text-gray-500">Member since</p>
+                            <p class="text-soft-white font-semibold text-sm">
+                                @(_profile?.CreatedAt.ToString("MMMM dd, yyyy") ?? "—")
+                            </p>
+                        </div>
+
+                        <div class="space-y-1">
+                            <p class="text-xs font-bold uppercase tracking-widest text-gray-500">Currency</p>
+                            <span class="inline-block border-2 border-vivid-yellow px-3 py-1 text-vivid-yellow font-black text-xs tracking-widest">
+                                @(_profile?.DefaultCurrency ?? "—")
+                            </span>
+                        </div>
+                    </div>
+                </NeubrutalistCard>
+            </div>
+
+            @* Edit form *@
+            <div class="lg:col-span-2">
+                <NeubrutalistCard Title="Edit Profile" Variant="NeubrutalistCard.CardVariant.Default">
+                    <div class="space-y-6">
+
+                        @if (_successMessage is not null)
+                        {
+                            <NeubrutalistAlert Severity="NeubrutalistAlert.AlertSeverity.Success"
+                                               Message="@_successMessage" />
+                        }
+
+                        @if (_errorMessage is not null)
+                        {
+                            <NeubrutalistAlert Severity="NeubrutalistAlert.AlertSeverity.Error"
+                                               Message="@_errorMessage" />
+                        }
+
+                        <NeubrutalistInput Label="Display Name"
+                                           Value="@_form.DisplayName"
+                                           ValueChanged="@(v => _form.DisplayName = v)"
+                                           Placeholder="How should we call you?"
+                                           Error="@_displayNameError" />
+
+                        @* Currency selector *@
+                        <div class="flex flex-col gap-1">
+                            <label class="text-xs font-bold uppercase tracking-widest text-soft-white">
+                                Default Currency
+                            </label>
+                            <select value="@_form.DefaultCurrency"
+                                    @onchange="@(e => _form.DefaultCurrency = e.Value?.ToString() ?? string.Empty)"
+                                    class="w-full bg-base-bg text-soft-white border-2 border-base-border px-4 py-2.5 font-medium focus:outline-none focus:border-neon transition-colors duration-100 appearance-none">
+                                @foreach (var c in _currencies)
+                                {
+                                    <option value="@c.Code"
+                                            style="background:#111; color:#fff;"
+                                            selected="@(_form.DefaultCurrency == c.Code)">
+                                        @c.Code — @c.Name
+                                    </option>
+                                }
+                            </select>
+                            @if (_currencyError is not null)
+                            {
+                                <span class="text-hot-pink text-xs font-semibold">@_currencyError</span>
+                            }
+                        </div>
+
+                        <div class="pt-2">
+                            <NeubrutalistButton Text="@(_saving ? "Saving…" : "Save Changes")"
+                                                Variant="NeubrutalistButton.ButtonVariant.Secondary"
+                                                Disabled="@_saving"
+                                                OnClick="HandleSubmit" />
+                        </div>
+                    </div>
+                </NeubrutalistCard>
+            </div>
+
+        </div>
+    }
+</div>
+
+@code {
+    private record CurrencyOption(string Code, string Name);
+
+    private static readonly CurrencyOption[] _currencies =
+    [
+        new("USD", "US Dollar"),
+        new("EUR", "Euro"),
+        new("GBP", "British Pound"),
+        new("IDR", "Indonesian Rupiah"),
+        new("JPY", "Japanese Yen"),
+        new("AUD", "Australian Dollar"),
+        new("CAD", "Canadian Dollar"),
+        new("CHF", "Swiss Franc"),
+        new("CNY", "Chinese Yuan"),
+        new("INR", "Indian Rupee"),
+        new("SGD", "Singapore Dollar"),
+        new("MYR", "Malaysian Ringgit"),
+        new("THB", "Thai Baht"),
+        new("KRW", "South Korean Won"),
+        new("HKD", "Hong Kong Dollar"),
+    ];
+
+    private UserProfileModel? _profile;
+    private string? _email;
+
+    private bool _loading = true;
+    private bool _saving;
+    private string? _successMessage;
+    private string? _errorMessage;
+    private string? _displayNameError;
+    private string? _currencyError;
+
+    private readonly UpdateProfileRequest _form = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        _email = authState.User.Identity?.Name
+            ?? authState.User.FindFirst("email")?.Value
+            ?? authState.User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
+
+        _profile = await ProfileService.GetProfileAsync();
+        if (_profile is not null)
+        {
+            _form.DisplayName = _profile.DisplayName;
+            _form.DefaultCurrency = _profile.DefaultCurrency;
+        }
+
+        _loading = false;
+    }
+
+    private async Task HandleSubmit()
+    {
+        _displayNameError = null;
+        _currencyError = null;
+        _successMessage = null;
+        _errorMessage = null;
+
+        if (string.IsNullOrWhiteSpace(_form.DisplayName))
+        {
+            _displayNameError = "Display name is required.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_form.DefaultCurrency))
+        {
+            _currencyError = "Please select a currency.";
+            return;
+        }
+
+        _saving = true;
+
+        var updated = await ProfileService.UpdateProfileAsync(_form);
+
+        if (updated is not null)
+        {
+            _profile = updated;
+            _form.DisplayName = updated.DisplayName;
+            _form.DefaultCurrency = updated.DefaultCurrency;
+            _successMessage = "Profile updated successfully.";
+        }
+        else
+        {
+            _errorMessage = "Failed to update profile. Please try again.";
+        }
+
+        _saving = false;
+    }
+}

@@ -64,16 +64,22 @@
             <AuthorizeView>
                 <Authorized>
                     <div class="flex items-center gap-3 mb-3">
-                        <div class="w-8 h-8 border-2 border-neon flex items-center justify-center">
+                        <a href="/profile"
+                           class="w-8 h-8 border-2 border-neon flex items-center justify-center hover:shadow-brutal-green transition-all duration-100">
                             <span class="text-neon font-black text-sm">
                                 @(context.User.Identity?.Name?.Substring(0, 1).ToUpper() ?? "U")
                             </span>
-                        </div>
-                        <span class="text-xs text-gray-400 font-semibold truncate">
+                        </a>
+                        <a href="/profile" class="text-xs text-gray-400 font-semibold truncate hover:text-neon transition-colors">
                             @context.User.Identity?.Name
-                        </span>
+                        </a>
                     </div>
-                    <form action="Account/Logout" method="post" class="inline">
+                    <div class="flex items-center gap-4">
+                        <a href="/profile"
+                           class="text-xs font-bold uppercase tracking-widest text-gray-500 hover:text-neon transition-colors">
+                            Profile
+                        </a>
+                        <form action="Account/Logout" method="post" class="inline">
                         <AntiforgeryToken />
                         <input type="hidden" name="returnUrl" value="Account/Login" />
                         <button type="submit"
@@ -81,6 +87,7 @@
                             Logout
                         </button>
                     </form>
+                    </div>
                 </Authorized>
             </AuthorizeView>
         </div>

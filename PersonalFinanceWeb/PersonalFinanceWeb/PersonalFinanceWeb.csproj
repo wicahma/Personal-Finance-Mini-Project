@@ -10,6 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="MailKit" Version="4.11.0" />
     <ProjectReference Include="..\PersonalFinanceWeb.Client\PersonalFinanceWeb.Client.csproj" />
     <ProjectReference Include="..\..\PersonalFinance.Infrastructure\PersonalFinance.Infrastructure.csproj" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="10.0.3" />
@@ -31,8 +32,7 @@
       <TailwindMinify Condition="'$(Configuration)' == 'Release'">--minify</TailwindMinify>
       <TailwindMinify Condition="'$(Configuration)' != 'Release'"></TailwindMinify>
     </PropertyGroup>
-    <Exec Command="&quot;$(TailwindExe)&quot; -c tailwind.config.cjs -i wwwroot/tailwind.input.css -o wwwroot/app.css $(TailwindMinify)"
-          WorkingDirectory="$(MSBuildThisFileDirectory)" />
+    <Exec Command="&quot;$(TailwindExe)&quot; -c tailwind.config.cjs -i wwwroot/tailwind.input.css -o wwwroot/app.css $(TailwindMinify)" WorkingDirectory="$(MSBuildThisFileDirectory)" />
   </Target>
 
 </Project>

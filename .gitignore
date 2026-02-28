@@ -68,3 +68,6 @@ npm-debug.log*
 *.cer
 *.crt
 *.key
+
+appsettings.json
+!appsettings.Example.json
