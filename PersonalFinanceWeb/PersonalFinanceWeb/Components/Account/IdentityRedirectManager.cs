@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Identity;
-using PersonalFinanceWeb.Data;
+using PersonalFinance.Infrastructure.Identity;
 
 namespace PersonalFinanceWeb.Components.Account
 {

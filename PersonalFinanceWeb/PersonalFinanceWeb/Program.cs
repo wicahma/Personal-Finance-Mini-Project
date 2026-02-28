@@ -4,10 +4,13 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using PersonalFinance.Infrastructure;
+using PersonalFinance.Infrastructure.Identity;
+using PersonalFinance.Infrastructure.Persistence;
+using PersonalFinanceWeb.Client.Services;
 using PersonalFinanceWeb.Components;
 using PersonalFinanceWeb.Components.Account;
-using PersonalFinanceWeb.Data;
 using PersonalFinanceWeb.Middleware;
+using PersonalFinanceWeb.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -62,9 +65,6 @@ builder.Services.AddAuthentication(options =>
         });
     });
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(connectionString));
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 builder.Services.AddIdentityCore<ApplicationUser>(options =>
@@ -72,12 +72,15 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
         options.SignIn.RequireConfirmedAccount = true;
         options.Stores.SchemaVersion = IdentitySchemaVersions.Version3;
     })
-    .AddEntityFrameworkStores<ApplicationDbContext>()
+    .AddEntityFrameworkStores<FinanceDbContext>()
     .AddSignInManager()
     .AddDefaultTokenProviders();
 
 builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
 builder.Services.AddInfrastructure(builder.Configuration);
+
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IDashboardApiService, ServerDashboardApiService>();
 
 WebApplication? app = builder.Build();
 

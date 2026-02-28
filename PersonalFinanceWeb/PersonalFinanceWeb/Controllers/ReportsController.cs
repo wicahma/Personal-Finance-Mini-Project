@@ -17,23 +17,38 @@ public sealed class ReportsController : BaseApiController
         _profileService = profileService;
     }
 
-    // GET /api/reports/summary?month=YYYY-MM
+    // GET /api/reports/summary?month=YYYY-MM  OR  ?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
     [HttpGet("summary")]
-    public async Task<IActionResult> GetSummary([FromQuery] string? month, CancellationToken ct)
+    public async Task<IActionResult> GetSummary(
+        [FromQuery] string? month,
+        [FromQuery] DateTime? startDate,
+        [FromQuery] DateTime? endDate,
+        CancellationToken ct)
     {
         var profileId = await GetUserProfileIdAsync(_profileService, ct);
-        var effectiveMonth = month ?? DateTime.UtcNow.ToString("yyyy-MM");
+        var effectiveMonth = ResolveMonth(month, startDate, endDate);
         var summary = await _reportService.GetSummaryAsync(profileId, effectiveMonth, ct);
         return OkData(summary);
     }
 
-    // GET /api/reports/charts?month=YYYY-MM
+    // GET /api/reports/charts?month=YYYY-MM  OR  ?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
     [HttpGet("charts")]
-    public async Task<IActionResult> GetCharts([FromQuery] string? month, CancellationToken ct)
+    public async Task<IActionResult> GetCharts(
+        [FromQuery] string? month,
+        [FromQuery] DateTime? startDate,
+        [FromQuery] DateTime? endDate,
+        CancellationToken ct)
     {
         var profileId = await GetUserProfileIdAsync(_profileService, ct);
-        var effectiveMonth = month ?? DateTime.UtcNow.ToString("yyyy-MM");
+        var effectiveMonth = ResolveMonth(month, startDate, endDate);
         var charts = await _reportService.GetChartDataAsync(profileId, effectiveMonth, ct);
         return OkData(charts);
+    }
+
+    private static string ResolveMonth(string? month, DateTime? startDate, DateTime? endDate)
+    {
+        if (!string.IsNullOrWhiteSpace(month)) return month;
+        var d = startDate ?? endDate ?? DateTime.UtcNow;
+        return d.ToString("yyyy-MM");
     }
 }

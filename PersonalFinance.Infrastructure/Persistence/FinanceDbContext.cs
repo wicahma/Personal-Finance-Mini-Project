@@ -1,11 +1,13 @@
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using PersonalFinance.Domain.Abstractions;
 using PersonalFinance.Domain.Entities;
+using PersonalFinance.Infrastructure.Identity;
 
 namespace PersonalFinance.Infrastructure.Persistence;
 
-public class FinanceDbContext : DbContext
+public class FinanceDbContext : IdentityDbContext<ApplicationUser>
 {
     public FinanceDbContext(DbContextOptions<FinanceDbContext> options) : base(options) { }
 

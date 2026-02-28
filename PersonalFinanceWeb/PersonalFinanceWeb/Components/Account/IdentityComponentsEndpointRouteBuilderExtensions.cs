@@ -7,9 +7,9 @@ using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Primitives;
+using PersonalFinance.Infrastructure.Identity;
 using PersonalFinanceWeb.Components.Account.Pages;
 using PersonalFinanceWeb.Components.Account.Pages.Manage;
-using PersonalFinanceWeb.Data;
 
 namespace Microsoft.AspNetCore.Routing
 {

@@ -1,45 +1,343 @@
 ﻿@page "/"
+@rendermode InteractiveAuto
+
+@inject IDashboardApiService DashboardService
+@inject IJSRuntime JS
 
 <PageTitle>Dashboard — FinanceOS</PageTitle>
 
 <div class="space-y-8">
- 
+
+    @* ====== PAGE HEADER ====== *@
     <div>
         <h1 class="text-4xl font-black uppercase tracking-tight text-soft-white">Dashboard</h1>
-        <p class="text-gray-400 mt-1 text-sm font-medium">
+        <p class="text-gray-400 mt-1 text-sm font-medium tracking-wider">
             @DateTime.Now.ToString("dddd, MMMM dd yyyy")
         </p>
     </div>
- 
+
+    @* ====== FILTER BAR ====== *@
+    <div class="bg-base-surface border-2 border-base-border p-5 shadow-brutal-white">
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 items-end">
+
+            <div class="flex flex-col gap-1">
+                <label class="text-xs font-bold uppercase tracking-widest text-soft-white">From</label>
+                <input type="date"
+                       value="@_startDateStr"
+                       @onchange="@(e => OnStartDateChange(e.Value?.ToString()))"
+                       class="bg-base-bg text-soft-white border-2 border-base-border px-3 py-2.5 font-medium text-sm focus:outline-none focus:border-neon w-full" />
+            </div>
+
+            <div class="flex flex-col gap-1">
+                <label class="text-xs font-bold uppercase tracking-widest text-soft-white">To</label>
+                <input type="date"
+                       value="@_endDateStr"
+                       @onchange="@(e => OnEndDateChange(e.Value?.ToString()))"
+                       class="bg-base-bg text-soft-white border-2 border-base-border px-3 py-2.5 font-medium text-sm focus:outline-none focus:border-neon w-full" />
+            </div>
+
+            <div class="flex flex-col gap-1">
+                <label class="text-xs font-bold uppercase tracking-widest text-soft-white">Account</label>
+                <select @bind="_selectedAccountIdStr"
+                        class="bg-base-bg text-soft-white border-2 border-base-border px-3 py-2.5 font-medium text-sm focus:outline-none focus:border-neon w-full">
+                    <option value="">All Accounts</option>
+                    @foreach (var a in _accounts)
+                    {
+                        <option value="@a.Id">@a.Name</option>
+                    }
+                </select>
+            </div>
+
+            <div class="flex flex-col gap-1">
+                <label class="text-xs font-bold uppercase tracking-widest text-soft-white">Category</label>
+                <select @bind="_selectedCategoryIdStr"
+                        class="bg-base-bg text-soft-white border-2 border-base-border px-3 py-2.5 font-medium text-sm focus:outline-none focus:border-neon w-full">
+                    <option value="">All Categories</option>
+                    @foreach (var c in _categories)
+                    {
+                        <option value="@c.Id">@c.Name</option>
+                    }
+                </select>
+            </div>
+
+            <div class="flex flex-col gap-1">
+                <label class="text-xs font-bold uppercase tracking-widest text-soft-white">Tag</label>
+                <select @bind="_selectedTagIdStr"
+                        class="bg-base-bg text-soft-white border-2 border-base-border px-3 py-2.5 font-medium text-sm focus:outline-none focus:border-neon w-full">
+                    <option value="">All Tags</option>
+                    @foreach (var t in _tags)
+                    {
+                        <option value="@t.Id">@t.Name</option>
+                    }
+                </select>
+            </div>
+
+            <div class="flex flex-col justify-end">
+                <button type="button"
+                        @onclick="ApplyFiltersAsync"
+                        disabled="@_isLoading"
+                        class="w-full px-5 py-2.5 font-black text-sm uppercase tracking-widest text-black bg-vivid-yellow border-2 border-black shadow-brutal-white hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all duration-100 disabled:opacity-50 disabled:cursor-not-allowed">
+                    @(_isLoading ? "Loading…" : "Apply")
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    @* ====== SUMMARY CARDS ====== *@
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
 
-        <NeubrutalistCard Variant="NeubrutalistCard.CardVariant.Neon" Title="Net Worth">
-            <p class="text-3xl font-black text-neon">$0.00</p>
-            <p class="text-xs text-gray-400 mt-2 uppercase tracking-widest">Across all accounts</p>
-        </NeubrutalistCard>
+        @* Income Card *@
+        <div class="bg-base-surface border-2 border-neon shadow-brutal-green p-6">
+            <div class="flex items-center justify-between mb-4">
+                <span class="text-xs font-black uppercase tracking-widest text-gray-400">Total Income</span>
+                <div class="w-8 h-8 border-2 border-neon flex items-center justify-center">
+                    <svg class="w-4 h-4 text-neon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                    </svg>
+                </div>
+            </div>
+            @if (_isLoading)
+            {
+                <div class="h-9 w-40 bg-base-border animate-pulse"></div>
+            }
+            else
+            {
+                <p class="text-3xl font-black text-neon tracking-tight">@FormatCurrency(_summary?.TotalIncome ?? 0)</p>
+            }
+            <p class="text-xs text-gray-500 mt-3 uppercase tracking-widest">Receipts in period</p>
+        </div>
 
-        <NeubrutalistCard Variant="NeubrutalistCard.CardVariant.Yellow" Title="Income This Month">
-            <p class="text-3xl font-black text-vivid-yellow">$0.00</p>
-            <p class="text-xs text-gray-400 mt-2 uppercase tracking-widest">@DateTime.Now.ToString("MMMM yyyy")</p>
-        </NeubrutalistCard>
+        @* Expenses Card *@
+        <div class="bg-base-surface border-2 border-hot-pink shadow-brutal-pink p-6">
+            <div class="flex items-center justify-between mb-4">
+                <span class="text-xs font-black uppercase tracking-widest text-gray-400">Total Expenses</span>
+                <div class="w-8 h-8 border-2 border-hot-pink flex items-center justify-center">
+                    <svg class="w-4 h-4 text-hot-pink" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M20 12H4" />
+                    </svg>
+                </div>
+            </div>
+            @if (_isLoading)
+            {
+                <div class="h-9 w-40 bg-base-border animate-pulse"></div>
+            }
+            else
+            {
+                <p class="text-3xl font-black text-hot-pink tracking-tight">@FormatCurrency(_summary?.TotalExpense ?? 0)</p>
+            }
+            <p class="text-xs text-gray-500 mt-3 uppercase tracking-widest">Spending in period</p>
+        </div>
 
-        <NeubrutalistCard Variant="NeubrutalistCard.CardVariant.Pink" Title="Expenses This Month">
-            <p class="text-3xl font-black text-hot-pink">$0.00</p>
-            <p class="text-xs text-gray-400 mt-2 uppercase tracking-widest">@DateTime.Now.ToString("MMMM yyyy")</p>
-        </NeubrutalistCard>
+        @* Net Cash Flow Card *@
+        <div class="bg-base-surface border-2 border-vivid-yellow shadow-brutal-yellow p-6">
+            <div class="flex items-center justify-between mb-4">
+                <span class="text-xs font-black uppercase tracking-widest text-gray-400">Net Cash Flow</span>
+                <div class="w-8 h-8 border-2 border-vivid-yellow flex items-center justify-center">
+                    <svg class="w-4 h-4 text-vivid-yellow" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                    </svg>
+                </div>
+            </div>
+            @if (_isLoading)
+            {
+                <div class="h-9 w-40 bg-base-border animate-pulse"></div>
+            }
+            else
+            {
+                var net = _summary?.NetCashFlow ?? 0;
+                <p class="text-3xl font-black tracking-tight @NetFlowClass(net)">
+                    @(net >= 0 ? "+" : "")@FormatCurrency(net)
+                </p>
+            }
+            <p class="text-xs text-gray-500 mt-3 uppercase tracking-widest">Income minus expenses</p>
+        </div>
 
     </div>
- 
-    <NeubrutalistCard Title="Quick Actions">
+
+    @* ====== TOP SPENDING CHART ====== *@
+    <div class="bg-base-surface border-2 border-base-border shadow-brutal-white p-6">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-lg font-black uppercase tracking-widest text-soft-white">Top Spending Categories</h3>
+            @if (!_isLoading && _chartData.Count > 0)
+            {
+                <span class="text-xs font-bold text-gray-500 uppercase tracking-widest border border-base-border px-2 py-1">
+                    @_chartData.Count @(_chartData.Count == 1 ? "category" : "categories")
+                </span>
+            }
+        </div>
+
+        @if (_isLoading)
+        {
+            <div class="h-72 flex items-center justify-center gap-3">
+                <div class="w-3 h-3 bg-neon animate-bounce" style="animation-delay: 0ms"></div>
+                <div class="w-3 h-3 bg-vivid-yellow animate-bounce" style="animation-delay: 150ms"></div>
+                <div class="w-3 h-3 bg-hot-pink animate-bounce" style="animation-delay: 300ms"></div>
+            </div>
+        }
+        else if (_chartData.Count == 0)
+        {
+            <div class="h-72 border-2 border-dashed border-base-border flex flex-col items-center justify-center gap-3">
+                <svg class="w-10 h-10 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                <p class="text-gray-600 text-sm font-bold uppercase tracking-widest">No expense data for this period</p>
+            </div>
+        }
+        else
+        {
+            <div class="relative" style="height: 320px;">
+                <canvas id="topCategoriesChart"></canvas>
+            </div>
+
+            @* Legend Table *@
+            <div class="mt-6 border-t-2 border-base-border pt-5 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                @foreach (var (item, idx) in _chartData.Select((x, i) => (x, i)))
+                {
+                    var color = _accentColors[idx % _accentColors.Length];
+                    <div class="flex items-center justify-between gap-2 py-1.5">
+                        <div class="flex items-center gap-2 min-w-0">
+                            <span class="w-3 h-3 flex-shrink-0 border border-black" style="background-color: @color;"></span>
+                            <span class="text-sm font-semibold text-soft-white truncate">@item.CategoryName</span>
+                        </div>
+                        <div class="flex items-center gap-3 flex-shrink-0">
+                            <span class="text-sm font-black text-soft-white">@FormatCurrency(item.TotalSpent)</span>
+                            <span class="text-xs text-gray-500 w-12 text-right">@item.Percentage.ToString("F1")%</span>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    @* ====== QUICK ACTIONS ====== *@
+    <div class="bg-base-surface border-2 border-base-border shadow-brutal-white p-6">
+        <h3 class="text-lg font-black uppercase tracking-widest text-soft-white mb-4">Quick Actions</h3>
         <div class="flex flex-wrap gap-4">
             <NeubrutalistButton Text="Add Transaction" Variant="NeubrutalistButton.ButtonVariant.Primary" />
             <NeubrutalistButton Text="Transfer" Variant="NeubrutalistButton.ButtonVariant.Secondary" />
             <NeubrutalistButton Text="Add Account" Variant="NeubrutalistButton.ButtonVariant.Ghost" />
         </div>
-    </NeubrutalistCard>
-
-    <NeubrutalistCard Title="Recent Transactions">
-        <p class="text-gray-500 text-sm italic">No transactions yet. Add your first one above.</p>
-    </NeubrutalistCard>
+    </div>
 
 </div>
+
+@code {
+    // ── Filter state ──────────────────────────────────────────
+    private DateTime? _startDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+    private DateTime? _endDate   = DateTime.Now.Date;
+    private string _startDateStr => _startDate?.ToString("yyyy-MM-dd") ?? string.Empty;
+    private string _endDateStr   => _endDate?.ToString("yyyy-MM-dd")   ?? string.Empty;
+
+    private string _selectedAccountIdStr  = string.Empty;
+    private string _selectedCategoryIdStr = string.Empty;
+    private string _selectedTagIdStr      = string.Empty;
+
+    private Guid? SelectedAccountId  => Guid.TryParse(_selectedAccountIdStr,  out var g) ? g : null;
+    private Guid? SelectedCategoryId => Guid.TryParse(_selectedCategoryIdStr, out var g) ? g : null;
+    private Guid? SelectedTagId      => Guid.TryParse(_selectedTagIdStr,      out var g) ? g : null;
+
+    // ── Data state ────────────────────────────────────────────
+    private DashboardSummaryModel? _summary;
+    private IReadOnlyList<ChartDataModel> _chartData  = Array.Empty<ChartDataModel>();
+    private IReadOnlyList<AccountModel>   _accounts   = Array.Empty<AccountModel>();
+    private IReadOnlyList<CategoryModel>  _categories = Array.Empty<CategoryModel>();
+    private IReadOnlyList<TagModel>       _tags       = Array.Empty<TagModel>();
+
+    // ── UI state ──────────────────────────────────────────────
+    private bool _isLoading;
+    private bool _pendingChartRender;
+
+    private static readonly string[] _accentColors =
+        { "#39FF14", "#FF2D78", "#FFE600", "#00D4FF", "#FF6B35", "#C084FC", "#FB923C", "#34D399" };
+
+    // ── Lifecycle ─────────────────────────────────────────────
+    protected override async Task OnInitializedAsync()
+    {
+        await Task.WhenAll(
+            LoadDropdownsAsync(),
+            ApplyFiltersAsync()
+        );
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_pendingChartRender)
+        {
+            _pendingChartRender = false;
+            if (_chartData.Count > 0)
+                await RenderChartJsAsync();
+        }
+    }
+
+    // ── Data loading ──────────────────────────────────────────
+    private async Task LoadDropdownsAsync()
+    {
+        var accountTask  = DashboardService.GetAccountsAsync();
+        var catTask      = DashboardService.GetCategoriesAsync();
+        var tagTask      = DashboardService.GetTagsAsync();
+        await Task.WhenAll(accountTask, catTask, tagTask);
+        _accounts   = accountTask.Result;
+        _categories = catTask.Result;
+        _tags       = tagTask.Result;
+    }
+
+    private async Task ApplyFiltersAsync()
+    {
+        _isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            var summaryTask = DashboardService.GetSummaryAsync(
+                _startDate, _endDate, SelectedAccountId, SelectedCategoryId, SelectedTagId);
+            var chartsTask  = DashboardService.GetChartDataAsync(
+                _startDate, _endDate, SelectedAccountId, SelectedCategoryId, SelectedTagId);
+
+            await Task.WhenAll(summaryTask, chartsTask);
+            _summary   = summaryTask.Result;
+            _chartData = chartsTask.Result;
+        }
+        finally
+        {
+            _isLoading          = false;
+            _pendingChartRender = true;
+            StateHasChanged();
+        }
+    }
+
+    // ── Event handlers ────────────────────────────────────────
+    private void OnStartDateChange(string? value)
+        => _startDate = DateTime.TryParse(value, out var d) ? d : null;
+
+    private void OnEndDateChange(string? value)
+        => _endDate = DateTime.TryParse(value, out var d) ? d : null;
+
+    // ── Chart.js integration ──────────────────────────────────
+    private async Task RenderChartJsAsync()
+    {
+        var labels = _chartData.Select(d => d.CategoryName).ToArray();
+        var data   = _chartData.Select(d => (double)d.TotalSpent).ToArray();
+        var colors = _chartData.Select((_, i) => _accentColors[i % _accentColors.Length]).ToArray();
+
+        try
+        {
+            await JS.InvokeVoidAsync("renderDashboardChart", labels, data, colors);
+        }
+        catch (JSException)
+        {
+            // JS runtime unavailable during SSR pre-render — safe to ignore.
+        }
+        catch (InvalidOperationException)
+        {
+            // Component may be disposed — safe to ignore.
+        }
+    }
+
+    // ── Helpers ───────────────────────────────────────────────
+    private static string FormatCurrency(decimal amount)
+        => amount.ToString("C2", System.Globalization.CultureInfo.CreateSpecificCulture("en-US"));
+
+    private static string NetFlowClass(decimal amount)
+        => amount >= 0 ? "text-neon" : "text-hot-pink";
+}
