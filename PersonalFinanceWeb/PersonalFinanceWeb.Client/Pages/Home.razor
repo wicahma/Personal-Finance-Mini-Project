@@ -3,16 +3,14 @@
 <PageTitle>Dashboard — FinanceOS</PageTitle>
 
 <div class="space-y-8">
-
-    <!-- Header -->
+ 
     <div>
         <h1 class="text-4xl font-black uppercase tracking-tight text-soft-white">Dashboard</h1>
         <p class="text-gray-400 mt-1 text-sm font-medium">
             @DateTime.Now.ToString("dddd, MMMM dd yyyy")
         </p>
     </div>
-
-    <!-- Summary cards -->
+ 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
 
         <NeubrutalistCard Variant="NeubrutalistCard.CardVariant.Neon" Title="Net Worth">
@@ -31,8 +29,7 @@
         </NeubrutalistCard>
 
     </div>
-
-    <!-- Quick actions -->
+ 
     <NeubrutalistCard Title="Quick Actions">
         <div class="flex flex-wrap gap-4">
             <NeubrutalistButton Text="Add Transaction" Variant="NeubrutalistButton.ButtonVariant.Primary" />
@@ -41,7 +38,6 @@
         </div>
     </NeubrutalistCard>
 
-    <!-- Recent transactions placeholder -->
     <NeubrutalistCard Title="Recent Transactions">
         <p class="text-gray-500 text-sm italic">No transactions yet. Add your first one above.</p>
     </NeubrutalistCard>

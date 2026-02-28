@@ -6,7 +6,6 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>aspnet-PersonalFinanceWeb-ac189582-92c6-46a5-8567-dc54d9efe6ae</UserSecretsId>
     <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
-    <!-- Tailwind Standalone CLI path (relative to solution root) -->
     <TailwindExe>$(MSBuildThisFileDirectory)..\..\tools\tailwindcss.exe</TailwindExe>
   </PropertyGroup>
 
@@ -27,7 +26,6 @@
     </PackageReference>
   </ItemGroup>
 
-  <!-- Tailwind CSS build integration (Standalone CLI, no Node.js) -->
   <Target Name="Tailwind" BeforeTargets="Build" Condition="Exists('$(TailwindExe)')">
     <PropertyGroup>
       <TailwindMinify Condition="'$(Configuration)' == 'Release'">--minify</TailwindMinify>
