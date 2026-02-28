@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="PersonalFinanceWeb/PersonalFinanceWeb.Client/PersonalFinanceWeb.Client.csproj" />
+  <Project Path="PersonalFinanceWeb/PersonalFinanceWeb/PersonalFinanceWeb.csproj" />
+</Solution>
