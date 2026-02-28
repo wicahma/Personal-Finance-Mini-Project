@@ -8,15 +8,16 @@ namespace PersonalFinance.Infrastructure.Services;
 
 public sealed class ReportService : IReportService
 {
-    private readonly FinanceDbContext _db;
+    private readonly IDbContextFactory<FinanceDbContext> _factory;
 
-    public ReportService(FinanceDbContext db) => _db = db;
+    public ReportService(IDbContextFactory<FinanceDbContext> factory) => _factory = factory;
 
     public async Task<DashboardSummaryDto> GetSummaryAsync(Guid userProfileId, string month, CancellationToken ct = default)
     {
+        await using var db = _factory.CreateDbContext();
         var (from, to) = ParseMonthRange(month);
 
-        var transactions = await _db.Transactions
+        var transactions = await db.Transactions
             .Where(x => x.UserProfileId == userProfileId && x.Date >= from && x.Date < to && !x.IsTransfer)
             .ToListAsync(ct);
 
@@ -28,9 +29,10 @@ public sealed class ReportService : IReportService
 
     public async Task<IReadOnlyList<ChartDataDto>> GetChartDataAsync(Guid userProfileId, string month, CancellationToken ct = default)
     {
+        await using var db = _factory.CreateDbContext();
         var (from, to) = ParseMonthRange(month);
 
-        var grouped = await _db.Transactions
+        var grouped = await db.Transactions
             .Where(x => x.UserProfileId == userProfileId
                      && x.Date >= from && x.Date < to
                      && x.Type == TransactionType.Expense
@@ -48,7 +50,7 @@ public sealed class ReportService : IReportService
         var totalSpent = grouped.Sum(g => g.Total);
         var categoryIds = grouped.Select(g => g.CategoryId).ToList();
 
-        var categories = await _db.Categories
+        var categories = await db.Categories
             .Where(c => categoryIds.Contains(c.Id))
             .ToDictionaryAsync(c => c.Id, ct);
 

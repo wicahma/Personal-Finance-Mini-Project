@@ -7,36 +7,45 @@ namespace PersonalFinance.Infrastructure.Repositories;
 
 public sealed class UserProfileRepository : IUserProfileRepository
 {
-    private readonly FinanceDbContext _db;
+    private readonly IDbContextFactory<FinanceDbContext> _factory;
 
-    public UserProfileRepository(FinanceDbContext db) => _db = db;
+    public UserProfileRepository(IDbContextFactory<FinanceDbContext> factory) => _factory = factory;
 
-    public Task<UserProfile?> GetByIdAsync(Guid id, CancellationToken ct = default)
-        => _db.UserProfiles.FirstOrDefaultAsync(x => x.Id == id, ct);
+    public async Task<UserProfile?> GetByIdAsync(Guid id, CancellationToken ct = default)
+    {
+        await using var db = _factory.CreateDbContext();
+        return await db.UserProfiles.FirstOrDefaultAsync(x => x.Id == id, ct);
+    }
 
-    public Task<UserProfile?> GetByIdentityUserIdAsync(string identityUserId, CancellationToken ct = default)
-        => _db.UserProfiles.FirstOrDefaultAsync(x => x.IdentityUserId == identityUserId, ct);
+    public async Task<UserProfile?> GetByIdentityUserIdAsync(string identityUserId, CancellationToken ct = default)
+    {
+        await using var db = _factory.CreateDbContext();
+        return await db.UserProfiles.FirstOrDefaultAsync(x => x.IdentityUserId == identityUserId, ct);
+    }
 
     public async Task<UserProfile> AddAsync(UserProfile userProfile, CancellationToken ct = default)
     {
-        _db.UserProfiles.Add(userProfile);
-        await _db.SaveChangesAsync(ct);
+        await using var db = _factory.CreateDbContext();
+        db.UserProfiles.Add(userProfile);
+        await db.SaveChangesAsync(ct);
         return userProfile;
     }
 
     public async Task UpdateAsync(UserProfile userProfile, CancellationToken ct = default)
     {
-        _db.UserProfiles.Update(userProfile);
-        await _db.SaveChangesAsync(ct);
+        await using var db = _factory.CreateDbContext();
+        db.UserProfiles.Update(userProfile);
+        await db.SaveChangesAsync(ct);
     }
 
     public async Task DeleteAsync(Guid id, CancellationToken ct = default)
     {
-        var entity = await _db.UserProfiles.FirstOrDefaultAsync(x => x.Id == id, ct);
+        await using var db = _factory.CreateDbContext();
+        var entity = await db.UserProfiles.FirstOrDefaultAsync(x => x.Id == id, ct);
         if (entity is not null)
         {
             entity.IsDeleted = true;
-            await _db.SaveChangesAsync(ct);
+            await db.SaveChangesAsync(ct);
         }
     }
 }

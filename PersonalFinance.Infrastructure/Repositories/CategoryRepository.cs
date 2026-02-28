@@ -8,39 +8,51 @@ namespace PersonalFinance.Infrastructure.Repositories;
 
 public sealed class CategoryRepository : ICategoryRepository
 {
-    private readonly FinanceDbContext _db;
+    private readonly IDbContextFactory<FinanceDbContext> _factory;
 
-    public CategoryRepository(FinanceDbContext db) => _db = db;
+    public CategoryRepository(IDbContextFactory<FinanceDbContext> factory) => _factory = factory;
 
-    public Task<Category?> GetByIdAsync(Guid id, CancellationToken ct = default)
-        => _db.Categories.FirstOrDefaultAsync(x => x.Id == id, ct);
+    public async Task<Category?> GetByIdAsync(Guid id, CancellationToken ct = default)
+    {
+        await using var db = _factory.CreateDbContext();
+        return await db.Categories.FirstOrDefaultAsync(x => x.Id == id, ct);
+    }
 
     public async Task<IReadOnlyList<Category>> GetByUserProfileIdAsync(Guid userProfileId, CancellationToken ct = default)
-        => await _db.Categories.Where(x => x.UserProfileId == userProfileId).ToListAsync(ct);
+    {
+        await using var db = _factory.CreateDbContext();
+        return await db.Categories.Where(x => x.UserProfileId == userProfileId).ToListAsync(ct);
+    }
 
     public async Task<IReadOnlyList<Category>> GetByTypeAsync(Guid userProfileId, CategoryType type, CancellationToken ct = default)
-        => await _db.Categories.Where(x => x.UserProfileId == userProfileId && x.Type == type).ToListAsync(ct);
+    {
+        await using var db = _factory.CreateDbContext();
+        return await db.Categories.Where(x => x.UserProfileId == userProfileId && x.Type == type).ToListAsync(ct);
+    }
 
     public async Task<Category> AddAsync(Category category, CancellationToken ct = default)
     {
-        _db.Categories.Add(category);
-        await _db.SaveChangesAsync(ct);
+        await using var db = _factory.CreateDbContext();
+        db.Categories.Add(category);
+        await db.SaveChangesAsync(ct);
         return category;
     }
 
     public async Task UpdateAsync(Category category, CancellationToken ct = default)
     {
-        _db.Categories.Update(category);
-        await _db.SaveChangesAsync(ct);
+        await using var db = _factory.CreateDbContext();
+        db.Categories.Update(category);
+        await db.SaveChangesAsync(ct);
     }
 
     public async Task DeleteAsync(Guid id, CancellationToken ct = default)
     {
-        var entity = await _db.Categories.FirstOrDefaultAsync(x => x.Id == id, ct);
+        await using var db = _factory.CreateDbContext();
+        var entity = await db.Categories.FirstOrDefaultAsync(x => x.Id == id, ct);
         if (entity is not null)
         {
             entity.IsDeleted = true;
-            await _db.SaveChangesAsync(ct);
+            await db.SaveChangesAsync(ct);
         }
     }
 }

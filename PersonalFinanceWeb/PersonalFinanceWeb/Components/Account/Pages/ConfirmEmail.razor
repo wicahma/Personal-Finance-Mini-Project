@@ -10,8 +10,15 @@
 
 <PageTitle>Confirm email</PageTitle>
 
-<h1>Confirm email</h1>
-<StatusMessage Message="@statusMessage" />
+<div class="bg-base-surface border-2 border-base-border shadow-brutal-green p-8 text-center">
+    <div class="text-neon text-4xl font-black mb-4">&#10003;</div>
+    <h1 class="text-xl font-black uppercase tracking-widest text-soft-white mb-3">Email confirmed</h1>
+    <StatusMessage Message="@statusMessage" />
+    <a href="Account/Login"
+       class="inline-block bg-neon text-black font-black uppercase tracking-widest py-2 px-6 border-2 border-black shadow-brutal-green hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-none active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all duration-100 text-sm mt-4">
+        Sign in
+    </a>
+</div>
 
 @code {
     private string? statusMessage;

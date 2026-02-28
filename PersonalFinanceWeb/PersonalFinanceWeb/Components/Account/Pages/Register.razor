@@ -17,42 +17,59 @@
 
 <PageTitle>Register</PageTitle>
 
-<h1>Register</h1>
+<div class="bg-base-surface border-2 border-base-border shadow-brutal-yellow p-8">
 
-<div class="row">
-    <div class="col-lg-6">
-        <StatusMessage Message="@Message" />
-        <EditForm Model="Input" method="post" OnValidSubmit="RegisterUser" FormName="register">
-            <DataAnnotationsValidator />
-            <h2>Create a new account.</h2>
-            <hr />
-            <ValidationSummary class="text-danger" role="alert" />
-            <div class="form-floating mb-3">
-                <InputText @bind-Value="Input.Email" id="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
-                <label for="Input.Email">Email</label>
-                <ValidationMessage For="() => Input.Email" class="text-danger" />
-            </div>
-            <div class="form-floating mb-3">
-                <InputText type="password" @bind-Value="Input.Password" id="Input.Password" class="form-control" autocomplete="new-password" aria-required="true" placeholder="password" />
-                <label for="Input.Password">Password</label>
-                <ValidationMessage For="() => Input.Password" class="text-danger" />
-            </div>
-            <div class="form-floating mb-3">
-                <InputText type="password" @bind-Value="Input.ConfirmPassword" id="Input.ConfirmPassword" class="form-control" autocomplete="new-password" aria-required="true" placeholder="password" />
-                <label for="Input.ConfirmPassword">Confirm Password</label>
-                <ValidationMessage For="() => Input.ConfirmPassword" class="text-danger" />
-            </div>
-            <button type="submit" class="w-100 btn btn-lg btn-primary">Register</button>
-        </EditForm>
-    </div>
-    <div class="col-lg-4 col-lg-offset-2">
-        <section>
-            <h3>Use another service to register.</h3>
-            <hr />
-            <ExternalLoginPicker />
-        </section>
-    </div>
+    <h1 class="text-xl font-black uppercase tracking-widest text-soft-white mb-1">Create account</h1>
+    <p class="text-gray-500 text-xs uppercase tracking-widest mb-6">Start tracking your finances</p>
+
+    <StatusMessage Message="@Message" />
+
+    <EditForm Model="Input" method="post" OnValidSubmit="RegisterUser" FormName="register">
+        <DataAnnotationsValidator />
+        <ValidationSummary class="text-hot-pink text-sm mb-4 border-2 border-hot-pink bg-base-bg px-4 py-3" role="alert" />
+
+        <div class="mb-4">
+            <label for="Input.Email" class="block text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">Email</label>
+            <InputText @bind-Value="Input.Email" id="Input.Email"
+                       class="w-full bg-base-bg border-2 border-base-border text-soft-white px-4 py-3 focus:outline-none focus:border-neon transition-colors placeholder:text-gray-600"
+                       autocomplete="username" aria-required="true" placeholder="name@example.com" />
+            <ValidationMessage For="() => Input.Email" class="text-hot-pink text-xs mt-1 block" />
+        </div>
+
+        <div class="mb-4">
+            <label for="Input.Password" class="block text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">Password</label>
+            <InputText type="password" @bind-Value="Input.Password" id="Input.Password"
+                       class="w-full bg-base-bg border-2 border-base-border text-soft-white px-4 py-3 focus:outline-none focus:border-neon transition-colors placeholder:text-gray-600"
+                       autocomplete="new-password" aria-required="true" placeholder="••••••••" />
+            <ValidationMessage For="() => Input.Password" class="text-hot-pink text-xs mt-1 block" />
+        </div>
+
+        <div class="mb-6">
+            <label for="Input.ConfirmPassword" class="block text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">Confirm Password</label>
+            <InputText type="password" @bind-Value="Input.ConfirmPassword" id="Input.ConfirmPassword"
+                       class="w-full bg-base-bg border-2 border-base-border text-soft-white px-4 py-3 focus:outline-none focus:border-neon transition-colors placeholder:text-gray-600"
+                       autocomplete="new-password" aria-required="true" placeholder="••••••••" />
+            <ValidationMessage For="() => Input.ConfirmPassword" class="text-hot-pink text-xs mt-1 block" />
+        </div>
+
+        <button type="submit"
+                class="w-full bg-vivid-yellow text-black font-black uppercase tracking-widest py-3 border-2 border-black shadow-brutal-yellow hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-none active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all duration-100 mb-4">
+            Create account
+        </button>
+
+        <div class="text-sm text-center">
+            <a href="Account/Login" class="text-gray-400 hover:text-soft-white transition-colors">Already have an account? <span class="text-neon font-bold">Sign in</span></a>
+        </div>
+    </EditForm>
 </div>
+
+@if (true)
+{
+    <div class="mt-4 bg-base-surface border-2 border-base-border p-6">
+        <p class="text-xs font-bold uppercase tracking-widest text-gray-500 mb-3">Use another service</p>
+        <ExternalLoginPicker />
+    </div>
+}
 
 @code {
     private IEnumerable<IdentityError>? identityErrors;

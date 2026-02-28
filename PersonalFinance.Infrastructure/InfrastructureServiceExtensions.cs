@@ -18,9 +18,10 @@ public static class InfrastructureServiceExtensions
         var connectionString = configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
-        services.AddDbContext<FinanceDbContext>(options =>
+        services.AddDbContextFactory<FinanceDbContext>(options =>
             options.UseSqlServer(connectionString,
-                sql => sql.MigrationsHistoryTable("__FinanceMigrationsHistory")));
+                sql => sql.MigrationsHistoryTable("__FinanceMigrationsHistory")),
+            ServiceLifetime.Scoped);
 
         services.AddScoped<IUserProfileRepository, UserProfileRepository>();
         services.AddScoped<IAccountRepository, AccountRepository>();

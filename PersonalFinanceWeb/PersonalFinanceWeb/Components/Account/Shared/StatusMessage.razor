@@ -1,7 +1,7 @@
 @if (!string.IsNullOrEmpty(DisplayMessage))
 {
-    var statusMessageClass = DisplayMessage.StartsWith("Error") ? "danger" : "success";
-    <div class="alert alert-@statusMessageClass" role="alert">
+    var isError = DisplayMessage.StartsWith("Error");
+    <div class="border-2 px-4 py-3 mb-4 text-sm font-medium @(isError ? "border-hot-pink text-hot-pink bg-base-surface" : "border-neon text-neon bg-base-surface")" role="alert">
         @DisplayMessage
     </div>
 }

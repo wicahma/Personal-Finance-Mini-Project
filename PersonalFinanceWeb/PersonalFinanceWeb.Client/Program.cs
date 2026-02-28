@@ -7,7 +7,6 @@ builder.Services.AddAuthorizationCore();
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddAuthenticationStateDeserialization();
 
-// Named HttpClient for API calls — base address is the Blazor server host.
 builder.Services.AddScoped(sp =>
 {
     var nav = sp.GetRequiredService<Microsoft.AspNetCore.Components.NavigationManager>();
