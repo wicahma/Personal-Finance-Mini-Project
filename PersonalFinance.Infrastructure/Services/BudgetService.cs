@@ -103,4 +103,27 @@ public sealed class BudgetService : IBudgetService
         e.Category?.Name ?? string.Empty,
         e.Month, e.Amount, spent, e.Amount - spent,
         e.CreatedAt, e.UpdatedAt);
+
+    public async Task<IReadOnlyList<BudgetRealizationDto>> GetRealizationsAsync(Guid userProfileId, string month, CancellationToken ct = default)
+    {
+        var entities = await _repo.GetByMonthAsync(userProfileId, month, ct);
+        var result = new List<BudgetRealizationDto>(entities.Count);
+        foreach (var e in entities)
+        {
+            var spent = await ComputeSpentAsync(e.UserProfileId, e.CategoryId, e.Month, ct);
+            result.Add(MapToRealizationDto(e, spent));
+        }
+        return result;
+    }
+
+    private static BudgetRealizationDto MapToRealizationDto(Budget e, decimal spent)
+    {
+        var percentage = e.Amount == 0 ? 0 : Math.Round((double)spent / (double)e.Amount * 100, 2);
+        return new BudgetRealizationDto(
+            e.Id, e.UserProfileId, e.CategoryId,
+            e.Category?.Name ?? string.Empty,
+            e.Category?.IconOrColor ?? string.Empty,
+            e.Month, e.Amount, spent, e.Amount - spent, percentage,
+            e.CreatedAt, e.UpdatedAt);
+    }
 }
