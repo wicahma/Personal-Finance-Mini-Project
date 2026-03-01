@@ -1,0 +1,538 @@
+@page "/categories"
+@rendermode InteractiveAuto
+@attribute [Authorize]
+
+@inject ICategoryClientService CategoryService
+
+<PageTitle>Categories — FinanceOS</PageTitle>
+
+<div class="space-y-8">
+
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-4xl font-black uppercase tracking-tight text-soft-white">Categories</h1>
+            <p class="text-gray-400 mt-1 text-sm font-medium tracking-wider">
+                Organise transactions with income & expense categories
+            </p>
+        </div>
+        <NeubrutalistButton Text="+ New Category"
+                            Variant="NeubrutalistButton.ButtonVariant.Primary"
+                            OnClick="OpenCreateModal" />
+    </div>
+
+    <div class="flex gap-2 flex-wrap">
+        @foreach (var f in new[] { "All", "Income", "Expense" })
+        {
+            <button @onclick="() => _filter = f"
+                    class="px-4 py-1.5 text-xs font-black uppercase tracking-widest border-2 transition-colors duration-100
+                           @(_filter == f
+                               ? (f == "Income"  ? "border-neon text-neon bg-neon/10"
+                                : f == "Expense" ? "border-hot-pink text-hot-pink bg-hot-pink/10"
+                                : "border-soft-white text-soft-white bg-white/5")
+                               : "border-base-border text-gray-500 hover:border-gray-400 hover:text-gray-300")">
+                @f
+            </button>
+        }
+    </div>
+
+    @if (_loading)
+    {
+        <div class="flex items-center gap-3 text-gray-400">
+            <svg class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+            </svg>
+            <span class="text-sm font-semibold uppercase tracking-widest">Loading categories…</span>
+        </div>
+    }
+    else
+    {
+        @if (_pageError is not null)
+        {
+            <NeubrutalistAlert Severity="NeubrutalistAlert.AlertSeverity.Error"
+                               Message="@_pageError" />
+        }
+
+        @if (!FilteredCategories.Any())
+        {
+            <div class="border-2 border-dashed border-base-border p-12 text-center">
+                <p class="text-gray-500 text-lg font-bold uppercase tracking-widest">No categories found</p>
+                <p class="text-gray-600 text-sm mt-2">
+                    @(_filter == "All"
+                        ? "Create your first category to start organising transactions."
+                        : $"No {_filter.ToLower()} categories exist yet.")
+                </p>
+            </div>
+        }
+        else
+        {
+            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+                @foreach (var cat in FilteredCategories)
+                {
+                    <div class="bg-base-surface border-2 p-5 flex flex-col gap-4"
+                         style="border-color: @TypeAccent(cat.Type); box-shadow: 4px 4px 0px @TypeAccent(cat.Type);">
+
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="flex items-center gap-3 flex-1 min-w-0">
+                                <div class="w-9 h-9 shrink-0 border-2 border-base-border"
+                                     style="background-color: @(string.IsNullOrWhiteSpace(cat.IconOrColor) ? "#333" : cat.IconOrColor);"
+                                     title="@cat.IconOrColor">
+                                </div>
+                                <h3 class="font-black text-soft-white text-lg leading-tight truncate"
+                                    title="@cat.Name">
+                                    @cat.Name
+                                </h3>
+                            </div>
+                            <span class="shrink-0 border-2 px-2 py-0.5 text-xs font-black tracking-widest"
+                                  style="border-color: @TypeAccent(cat.Type); color: @TypeAccent(cat.Type); box-shadow: 2px 2px 0px @TypeAccent(cat.Type);">
+                                @cat.Type.ToUpper()
+                            </span>
+                        </div>
+
+                        <div class="flex items-center justify-between border-t border-base-border pt-3 mt-auto">
+                            <span class="text-xs text-gray-500 font-semibold">
+                                @cat.CreatedAt.ToString("MMM d, yyyy")
+                            </span>
+                            <div class="flex items-center gap-2">
+                                <button @onclick="() => OpenEditModal(cat)"
+                                        class="text-xs font-bold uppercase tracking-widest border-2 border-base-border px-3 py-1
+                                               text-gray-400 hover:border-vivid-yellow hover:text-vivid-yellow transition-colors">
+                                    Edit
+                                </button>
+                                <button @onclick="() => OpenDeleteModal(cat)"
+                                        class="text-xs font-bold uppercase tracking-widest border-2 border-base-border px-3 py-1
+                                               text-gray-400 hover:border-hot-pink hover:text-hot-pink transition-colors">
+                                    Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="border-t-2 border-base-border pt-5 flex gap-6 text-xs font-bold uppercase tracking-widest text-gray-500">
+                <span>Total: <span class="text-soft-white">@_categories.Count</span></span>
+                <span style="color: #39FF14;">Income: @_categories.Count(c => c.Type == "Income")</span>
+                <span style="color: #FF2D78;">Expense: @_categories.Count(c => c.Type == "Expense")</span>
+            </div>
+        }
+    }
+</div>
+
+@if (_showCreateModal)
+{
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4"
+         style="background: rgba(0,0,0,0.85);"
+         @onclick="CloseCreateModal">
+
+        <div class="bg-base-surface border-2 border-neon shadow-brutal-green w-full max-w-md p-6 space-y-6"
+             @onclick:stopPropagation="true">
+
+            <div class="flex items-center justify-between">
+                <h2 class="text-2xl font-black uppercase tracking-tight text-soft-white">New Category</h2>
+                <button @onclick="CloseCreateModal"
+                        class="text-gray-500 hover:text-hot-pink font-black text-xl leading-none transition-colors">✕</button>
+            </div>
+
+            @if (_createError is not null)
+            {
+                <NeubrutalistAlert Severity="NeubrutalistAlert.AlertSeverity.Error" Message="@_createError" />
+            }
+
+            <div class="space-y-5">
+
+                <NeubrutalistInput Label="Category Name"
+                                   Value="@_form.Name"
+                                   ValueChanged="@(v => _form.Name = v)"
+                                   Placeholder="e.g. Groceries, Freelance Income"
+                                   Error="@_nameError" />
+
+                <div class="flex flex-col gap-1">
+                    <label class="text-xs font-bold uppercase tracking-widest text-soft-white">Category Type</label>
+                    <select value="@_form.Type"
+                            @onchange="@(e => _form.Type = e.Value?.ToString() ?? "Expense")"
+                            class="w-full bg-base-bg text-soft-white border-2 border-base-border px-4 py-2.5
+                                   font-medium focus:outline-none transition-colors duration-100 appearance-none
+                                   @(_form.Type == "Income" ? "focus:border-neon" : "focus:border-hot-pink")">
+                        <option value="Expense" style="background:#111;color:#fff;">💸 Expense — Money going out</option>
+                        <option value="Income"  style="background:#111;color:#fff;">💰 Income — Money coming in</option>
+                    </select>
+                </div>
+
+                <div class="flex flex-col gap-1">
+                    <label class="text-xs font-bold uppercase tracking-widest text-soft-white">
+                        Icon / Color
+                        <span class="text-gray-500 ml-1 normal-case font-medium">(optional)</span>
+                    </label>
+                    <div class="flex items-center gap-4 border-2 border-base-border p-3"
+                         style="box-shadow: 4px 4px 0px #FFFFFF;">
+                        <input type="color"
+                               value="@_form.IconOrColor"
+                               @oninput="@(e => _form.IconOrColor = e.Value?.ToString() ?? "#FFFFFF")"
+                               class="w-12 h-12 cursor-pointer bg-transparent border-none p-0 rounded-none" />
+                        <div class="flex-1">
+                            <p class="text-soft-white font-black text-sm tracking-widest">
+                                @_form.IconOrColor.ToUpper()
+                            </p>
+                            <p class="text-gray-500 text-xs mt-0.5">Click swatch to pick a color</p>
+                        </div>
+                        <div class="w-10 h-10 border-2 border-base-border shrink-0"
+                             style="background-color: @_form.IconOrColor;"></div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="flex gap-3 pt-2">
+                <NeubrutalistButton Text="@(_creating ? "Creating…" : "Create Category")"
+                                    Variant="NeubrutalistButton.ButtonVariant.Primary"
+                                    Disabled="@_creating"
+                                    OnClick="HandleCreate" />
+                <NeubrutalistButton Text="Cancel"
+                                    Variant="NeubrutalistButton.ButtonVariant.Ghost"
+                                    OnClick="CloseCreateModal" />
+            </div>
+        </div>
+    </div>
+}
+
+@if (_showEditModal && _editingCategory is not null)
+{
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4"
+         style="background: rgba(0,0,0,0.85);"
+         @onclick="CloseEditModal">
+
+        <div class="bg-base-surface border-2 border-vivid-yellow w-full max-w-md p-6 space-y-6"
+             style="box-shadow: 4px 4px 0px #FACC15;"
+             @onclick:stopPropagation="true">
+
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-2xl font-black uppercase tracking-tight text-soft-white">Edit Category</h2>
+                    <p class="text-xs text-gray-500 mt-0.5">
+                        Type:
+                        <span class="font-black" style="color: @TypeAccent(_editingCategory.Type);">
+                            @_editingCategory.Type.ToUpper()
+                        </span>
+                        &nbsp;·&nbsp; Cannot be changed after creation.
+                    </p>
+                </div>
+                <button @onclick="CloseEditModal"
+                        class="text-gray-500 hover:text-hot-pink font-black text-xl leading-none transition-colors">✕</button>
+            </div>
+
+            @if (_editError is not null)
+            {
+                <NeubrutalistAlert Severity="NeubrutalistAlert.AlertSeverity.Error" Message="@_editError" />
+            }
+
+            <div class="space-y-5">
+
+                <NeubrutalistInput Label="Category Name"
+                                   Value="@_editForm.Name"
+                                   ValueChanged="@(v => _editForm.Name = v)"
+                                   Placeholder="Category name"
+                                   Error="@_editNameError" />
+
+                <div class="flex flex-col gap-1">
+                    <label class="text-xs font-bold uppercase tracking-widest text-soft-white">Icon / Color</label>
+                    <div class="flex items-center gap-4 border-2 border-vivid-yellow p-3"
+                         style="box-shadow: 4px 4px 0px #FACC15;">
+                        <input type="color"
+                               value="@_editColor"
+                               @oninput="@(e => _editColor = e.Value?.ToString() ?? "#FFFFFF")"
+                               class="w-12 h-12 cursor-pointer bg-transparent border-none p-0 rounded-none" />
+                        <div class="flex-1">
+                            <p class="text-soft-white font-black text-sm tracking-widest">
+                                @_editColor.ToUpper()
+                            </p>
+                            <p class="text-gray-500 text-xs mt-0.5">Click swatch to pick a color</p>
+                        </div>
+                        <div class="w-10 h-10 border-2 border-base-border shrink-0"
+                             style="background-color: @_editColor;"></div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="flex gap-3 pt-2">
+                <NeubrutalistButton Text="@(_editing ? "Saving…" : "Save Changes")"
+                                    Variant="NeubrutalistButton.ButtonVariant.Secondary"
+                                    Disabled="@_editing"
+                                    OnClick="HandleEdit" />
+                <NeubrutalistButton Text="Cancel"
+                                    Variant="NeubrutalistButton.ButtonVariant.Ghost"
+                                    OnClick="CloseEditModal" />
+            </div>
+        </div>
+    </div>
+}
+
+@if (_showDeleteModal && _deleteTarget is not null)
+{
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4"
+         style="background: rgba(0,0,0,0.85);"
+         @onclick="CloseDeleteModal">
+
+        <div class="bg-base-surface border-2 border-hot-pink w-full max-w-sm p-6 space-y-5"
+             style="box-shadow: 4px 4px 0px #FF2D78;"
+             @onclick:stopPropagation="true">
+
+            <div class="flex items-center justify-between">
+                <h2 class="text-2xl font-black uppercase tracking-tight text-hot-pink">Delete Category</h2>
+                <button @onclick="CloseDeleteModal"
+                        class="text-gray-500 hover:text-hot-pink font-black text-xl leading-none transition-colors">✕</button>
+            </div>
+
+            @if (_deleteError is not null)
+            {
+                <NeubrutalistAlert Severity="NeubrutalistAlert.AlertSeverity.Error" Message="@_deleteError" />
+            }
+
+            <div class="border-2 border-base-border p-4 flex items-center gap-3">
+                <div class="w-8 h-8 shrink-0 border-2 border-base-border"
+                     style="background-color: @(string.IsNullOrWhiteSpace(_deleteTarget.IconOrColor) ? "#333" : _deleteTarget.IconOrColor);">
+                </div>
+                <div>
+                    <p class="font-black text-soft-white">@_deleteTarget.Name</p>
+                    <p class="text-xs font-bold tracking-widest mt-0.5"
+                       style="color: @TypeAccent(_deleteTarget.Type);">@_deleteTarget.Type.ToUpper()</p>
+                </div>
+            </div>
+
+            <p class="text-gray-400 text-sm">
+                This category will be <span class="font-bold text-soft-white">soft-deleted</span> and hidden from your view.
+                Existing transactions that reference it will be unaffected.
+            </p>
+
+            <div class="flex gap-3 pt-1">
+                <NeubrutalistButton Text="@(_deleting ? "Deleting…" : "Yes, Delete")"
+                                    Variant="NeubrutalistButton.ButtonVariant.Danger"
+                                    Disabled="@_deleting"
+                                    OnClick="HandleDelete" />
+                <NeubrutalistButton Text="Cancel"
+                                    Variant="NeubrutalistButton.ButtonVariant.Ghost"
+                                    OnClick="CloseDeleteModal" />
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<CategoryManagementModel> _categories = [];
+    private bool _loading = true;
+    private string? _pageError;
+    private string _filter = "All";
+
+    private bool _showCreateModal;
+    private bool _creating;
+    private string? _createError;
+    private string? _nameError;
+    private CreateCategoryRequest _form = new();
+
+    private bool _showEditModal;
+    private bool _editing;
+    private string? _editError;
+    private string? _editNameError;
+    private CategoryManagementModel? _editingCategory;
+    private UpdateCategoryRequest _editForm = new();
+    private string _editColor = "#FFFFFF";
+
+    private bool _showDeleteModal;
+    private bool _deleting;
+    private string? _deleteError;
+    private CategoryManagementModel? _deleteTarget;
+
+    private IEnumerable<CategoryManagementModel> FilteredCategories => _filter switch
+    {
+        "Income"  => _categories.Where(c => c.Type == "Income"),
+        "Expense" => _categories.Where(c => c.Type == "Expense"),
+        _         => _categories
+    };
+
+    private static string TypeAccent(string type) => type switch
+    {
+        "Income"  => "#39FF14",
+        "Expense" => "#FF2D78",
+        _         => "#FFFFFF"
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _pageError = null;
+        try
+        {
+            var result = await CategoryService.GetCategoriesAsync();
+            _categories = result.OrderBy(c => c.Type).ThenBy(c => c.Name).ToList();
+        }
+        catch (Exception ex)
+        {
+            _pageError = $"Failed to load categories: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+
+    private void OpenCreateModal()
+    {
+        _form = new CreateCategoryRequest { IconOrColor = "#FFFFFF" };
+        _createError = null;
+        _nameError = null;
+        _showCreateModal = true;
+    }
+
+    private void CloseCreateModal()
+    {
+        _showCreateModal = false;
+        _createError = null;
+        _nameError = null;
+    }
+
+    private async Task HandleCreate()
+    {
+        _nameError = null;
+        _createError = null;
+
+        if (string.IsNullOrWhiteSpace(_form.Name))
+        {
+            _nameError = "Category name is required.";
+            return;
+        }
+
+        _creating = true;
+        try
+        {
+            var result = await CategoryService.CreateCategoryAsync(_form);
+            if (result is not null)
+            {
+                _categories.Add(result);
+                _categories = _categories.OrderBy(c => c.Type).ThenBy(c => c.Name).ToList();
+                CloseCreateModal();
+            }
+            else
+            {
+                _createError = "Failed to create category. Please try again.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _createError = ex.Message;
+        }
+        finally
+        {
+            _creating = false;
+        }
+    }
+
+
+    private void OpenEditModal(CategoryManagementModel cat)
+    {
+        _editingCategory = cat;
+        _editForm = new UpdateCategoryRequest { Name = cat.Name, IconOrColor = cat.IconOrColor };
+        _editColor = string.IsNullOrWhiteSpace(cat.IconOrColor) ? "#FFFFFF" : cat.IconOrColor;
+        _editError = null;
+        _editNameError = null;
+        _showEditModal = true;
+    }
+
+    private void CloseEditModal()
+    {
+        _showEditModal = false;
+        _editingCategory = null;
+        _editError = null;
+        _editNameError = null;
+    }
+
+    private async Task HandleEdit()
+    {
+        _editNameError = null;
+        _editError = null;
+
+        if (string.IsNullOrWhiteSpace(_editForm.Name))
+        {
+            _editNameError = "Category name is required.";
+            return;
+        }
+
+        if (_editingCategory is null) return;
+
+        _editForm.IconOrColor = _editColor;
+        _editing = true;
+        try
+        {
+            var result = await CategoryService.UpdateCategoryAsync(_editingCategory.Id, _editForm);
+            if (result is not null)
+            {
+                var idx = _categories.FindIndex(c => c.Id == result.Id);
+                if (idx >= 0) _categories[idx] = result;
+                _categories = _categories.OrderBy(c => c.Type).ThenBy(c => c.Name).ToList();
+                CloseEditModal();
+            }
+            else
+            {
+                _editError = "Failed to save changes. Please try again.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _editError = ex.Message;
+        }
+        finally
+        {
+            _editing = false;
+        }
+    }
+
+
+    private void OpenDeleteModal(CategoryManagementModel cat)
+    {
+        _deleteTarget = cat;
+        _deleteError = null;
+        _showDeleteModal = true;
+    }
+
+    private void CloseDeleteModal()
+    {
+        _showDeleteModal = false;
+        _deleteTarget = null;
+        _deleteError = null;
+    }
+
+    private async Task HandleDelete()
+    {
+        if (_deleteTarget is null) return;
+
+        _deleting = true;
+        _deleteError = null;
+        try
+        {
+            var ok = await CategoryService.DeleteCategoryAsync(_deleteTarget.Id);
+            if (ok)
+            {
+                _categories.RemoveAll(c => c.Id == _deleteTarget.Id);
+                CloseDeleteModal();
+            }
+            else
+            {
+                _deleteError = "Failed to delete category. Please try again.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _deleteError = ex.Message;
+        }
+        finally
+        {
+            _deleting = false;
+        }
+    }
+}

@@ -726,6 +726,10 @@ body {
   height: 2.5rem;
 }
 
+.h-12 {
+  height: 3rem;
+}
+
 .h-20 {
   height: 5rem;
 }
@@ -798,6 +802,10 @@ body {
   width: 2rem;
 }
 
+.w-9 {
+  width: 2.25rem;
+}
+
 .w-full {
   width: 100%;
 }
@@ -812,6 +820,10 @@ body {
 
 .max-w-md {
   max-width: 28rem;
+}
+
+.max-w-sm {
+  max-width: 24rem;
 }
 
 .flex-1 {
@@ -978,6 +990,10 @@ body {
   word-break: break-all;
 }
 
+.rounded-none {
+  border-radius: 0px;
+}
+
 .border {
   border-width: 1px;
 }
@@ -1039,6 +1055,11 @@ body {
   border-color: rgb(57 255 20 / var(--tw-border-opacity, 1));
 }
 
+.border-soft-white {
+  --tw-border-opacity: 1;
+  border-color: rgb(240 240 240 / var(--tw-border-opacity, 1));
+}
+
 .border-transparent {
   border-color: transparent;
 }
@@ -1046,6 +1067,10 @@ body {
 .border-vivid-yellow {
   --tw-border-opacity: 1;
   border-color: rgb(255 230 0 / var(--tw-border-opacity, 1));
+}
+
+.border-white\/20 {
+  border-color: rgb(255 255 255 / 0.2);
 }
 
 .bg-base-bg {
@@ -1072,9 +1097,17 @@ body {
   background-color: rgb(255 45 120 / var(--tw-bg-opacity, 1));
 }
 
+.bg-hot-pink\/10 {
+  background-color: rgb(255 45 120 / 0.1);
+}
+
 .bg-neon {
   --tw-bg-opacity: 1;
   background-color: rgb(57 255 20 / var(--tw-bg-opacity, 1));
+}
+
+.bg-neon\/10 {
+  background-color: rgb(57 255 20 / 0.1);
 }
 
 .bg-transparent {
@@ -1084,6 +1117,10 @@ body {
 .bg-vivid-yellow {
   --tw-bg-opacity: 1;
   background-color: rgb(255 230 0 / var(--tw-bg-opacity, 1));
+}
+
+.bg-white\/5 {
+  background-color: rgb(255 255 255 / 0.05);
 }
 
 .p-0 {
@@ -1196,6 +1233,10 @@ body {
 
 .pb-6 {
   padding-bottom: 1.5rem;
+}
+
+.pt-1 {
+  padding-top: 0.25rem;
 }
 
 .pt-2 {
@@ -1518,6 +1559,11 @@ body {
   border-color: rgb(42 42 42 / var(--tw-border-opacity, 1));
 }
 
+.hover\:border-gray-400:hover {
+  --tw-border-opacity: 1;
+  border-color: rgb(156 163 175 / var(--tw-border-opacity, 1));
+}
+
 .hover\:border-hot-pink:hover {
   --tw-border-opacity: 1;
   border-color: rgb(255 45 120 / var(--tw-border-opacity, 1));
@@ -1546,6 +1592,11 @@ body {
 .hover\:text-black:hover {
   --tw-text-opacity: 1;
   color: rgb(0 0 0 / var(--tw-text-opacity, 1));
+}
+
+.hover\:text-gray-300:hover {
+  --tw-text-opacity: 1;
+  color: rgb(209 213 219 / var(--tw-text-opacity, 1));
 }
 
 .hover\:text-hot-pink:hover {
@@ -1704,5 +1755,9 @@ body {
 @media (min-width: 1280px) {
   .xl\:grid-cols-3 {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .xl\:grid-cols-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }

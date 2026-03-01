@@ -1,0 +1,482 @@
+@page "/tags"
+@rendermode InteractiveAuto
+@attribute [Authorize]
+
+@inject ITagClientService TagService
+
+<PageTitle>Tags — FinanceOS</PageTitle>
+
+<div class="space-y-8">
+
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-4xl font-black uppercase tracking-tight text-soft-white">Tags</h1>
+            <p class="text-gray-400 mt-1 text-sm font-medium tracking-wider">
+                Add granular labels to transactions for deeper tracking
+            </p>
+        </div>
+        <NeubrutalistButton Text="+ New Tag"
+                            Variant="NeubrutalistButton.ButtonVariant.Primary"
+                            OnClick="OpenCreateModal" />
+    </div>
+
+    @if (_loading)
+    {
+        <div class="flex items-center gap-3 text-gray-400">
+            <svg class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+            </svg>
+            <span class="text-sm font-semibold uppercase tracking-widest">Loading tags…</span>
+        </div>
+    }
+    else
+    {
+        @if (_pageError is not null)
+        {
+            <NeubrutalistAlert Severity="NeubrutalistAlert.AlertSeverity.Error"
+                               Message="@_pageError" />
+        }
+
+        @if (!_tags.Any())
+        {
+            <div class="border-2 border-dashed border-base-border p-12 text-center">
+                <p class="text-gray-500 text-lg font-bold uppercase tracking-widest">No tags yet</p>
+                <p class="text-gray-600 text-sm mt-2">Create your first tag to start labelling transactions.</p>
+            </div>
+        }
+        else
+        {
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                @foreach (var tag in _tags)
+                {
+                    <div class="bg-base-surface border-2 border-base-border p-5 flex flex-col gap-4"
+                         style="box-shadow: 4px 4px 0px @tag.Color;">
+
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="flex items-center gap-3 flex-1 min-w-0">
+                                <div class="w-8 h-8 shrink-0 border-2 border-white/20"
+                                     style="background-color: @tag.Color;">
+                                </div>
+                                <h3 class="font-black text-soft-white text-lg leading-tight truncate"
+                                    title="@tag.Name">
+                                    @tag.Name
+                                </h3>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between border-t border-base-border pt-3 mt-auto">
+                            <span class="border-2 px-2 py-0.5 text-xs font-black tracking-widest"
+                                  style="border-color: @tag.Color; color: @tag.Color;">
+                                @tag.Color.ToUpper()
+                            </span>
+                            <div class="flex items-center gap-2">
+                                <button @onclick="() => OpenEditModal(tag)"
+                                        class="text-xs font-bold uppercase tracking-widest border-2 border-base-border px-3 py-1
+                                               text-gray-400 hover:border-vivid-yellow hover:text-vivid-yellow transition-colors">
+                                    Edit
+                                </button>
+                                <button @onclick="() => OpenDeleteModal(tag)"
+                                        class="text-xs font-bold uppercase tracking-widest border-2 border-base-border px-3 py-1
+                                               text-gray-400 hover:border-hot-pink hover:text-hot-pink transition-colors">
+                                    Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="border-t-2 border-base-border pt-5">
+                <span class="text-xs font-bold uppercase tracking-widest text-gray-500">
+                    Total: <span class="text-soft-white">@_tags.Count</span> tags
+                </span>
+            </div>
+        }
+    }
+</div>
+
+@if (_showCreateModal)
+{
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4"
+         style="background: rgba(0,0,0,0.85);"
+         @onclick="CloseCreateModal">
+
+        <div class="bg-base-surface border-2 border-neon shadow-brutal-green w-full max-w-md p-6 space-y-6"
+             @onclick:stopPropagation="true">
+
+            <div class="flex items-center justify-between">
+                <h2 class="text-2xl font-black uppercase tracking-tight text-soft-white">New Tag</h2>
+                <button @onclick="CloseCreateModal"
+                        class="text-gray-500 hover:text-hot-pink font-black text-xl leading-none transition-colors">✕</button>
+            </div>
+
+            @if (_createError is not null)
+            {
+                <NeubrutalistAlert Severity="NeubrutalistAlert.AlertSeverity.Error" Message="@_createError" />
+            }
+
+            <div class="space-y-5">
+
+                <NeubrutalistInput Label="Tag Name"
+                                   Value="@_form.Name"
+                                   ValueChanged="@(v => _form.Name = v)"
+                                   Placeholder="e.g. Urgent, Weekly, Side Project"
+                                   Error="@_nameError" />
+
+                <div class="flex flex-col gap-1">
+                    <label class="text-xs font-bold uppercase tracking-widest text-soft-white">Tag Color</label>
+                    <div class="flex items-center gap-4 border-2 p-3 transition-all duration-100"
+                         style="border-color: @_form.Color; box-shadow: 4px 4px 0px @_form.Color;">
+                        <input type="color"
+                               value="@_form.Color"
+                               @oninput="@(e => _form.Color = e.Value?.ToString() ?? "#FFFFFF")"
+                               class="w-12 h-12 cursor-pointer bg-transparent border-none p-0 rounded-none" />
+                        <div class="flex-1">
+                            <p class="font-black text-sm tracking-widest transition-colors duration-100"
+                               style="color: @_form.Color;">
+                                @_form.Color.ToUpper()
+                            </p>
+                            <p class="text-gray-500 text-xs mt-0.5">Click swatch · border updates live</p>
+                        </div>
+                        <div class="border-2 border-base-border px-3 py-1.5 text-xs font-black"
+                             style="color: @_form.Color; box-shadow: 2px 2px 0px @_form.Color;">
+                            PREVIEW
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="flex gap-3 pt-2">
+                <NeubrutalistButton Text="@(_creating ? "Creating…" : "Create Tag")"
+                                    Variant="NeubrutalistButton.ButtonVariant.Primary"
+                                    Disabled="@_creating"
+                                    OnClick="HandleCreate" />
+                <NeubrutalistButton Text="Cancel"
+                                    Variant="NeubrutalistButton.ButtonVariant.Ghost"
+                                    OnClick="CloseCreateModal" />
+            </div>
+        </div>
+    </div>
+}
+
+@if (_showEditModal && _editingTag is not null)
+{
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4"
+         style="background: rgba(0,0,0,0.85);"
+         @onclick="CloseEditModal">
+
+        <div class="bg-base-surface border-2 w-full max-w-md p-6 space-y-6"
+             style="border-color: @_editColor; box-shadow: 4px 4px 0px @_editColor;"
+             @onclick:stopPropagation="true">
+
+            <div class="flex items-center justify-between">
+                <h2 class="text-2xl font-black uppercase tracking-tight text-soft-white">Edit Tag</h2>
+                <button @onclick="CloseEditModal"
+                        class="text-gray-500 hover:text-hot-pink font-black text-xl leading-none transition-colors">✕</button>
+            </div>
+
+            @if (_editError is not null)
+            {
+                <NeubrutalistAlert Severity="NeubrutalistAlert.AlertSeverity.Error" Message="@_editError" />
+            }
+
+            <div class="space-y-5">
+
+                <NeubrutalistInput Label="Tag Name"
+                                   Value="@_editForm.Name"
+                                   ValueChanged="@(v => _editForm.Name = v)"
+                                   Placeholder="Tag name"
+                                   Error="@_editNameError" />
+
+                <div class="flex flex-col gap-1">
+                    <label class="text-xs font-bold uppercase tracking-widest text-soft-white">Tag Color</label>
+                    <div class="flex items-center gap-4 border-2 p-3 transition-all duration-100"
+                         style="border-color: @_editColor; box-shadow: 4px 4px 0px @_editColor;">
+                        <input type="color"
+                               value="@_editColor"
+                               @oninput="@(e => _editColor = e.Value?.ToString() ?? "#FFFFFF")"
+                               class="w-12 h-12 cursor-pointer bg-transparent border-none p-0 rounded-none" />
+                        <div class="flex-1">
+                            <p class="font-black text-sm tracking-widest"
+                               style="color: @_editColor;">
+                                @_editColor.ToUpper()
+                            </p>
+                            <p class="text-gray-500 text-xs mt-0.5">Click swatch · border updates live</p>
+                        </div>
+                        <div class="border-2 border-base-border px-3 py-1.5 text-xs font-black"
+                             style="color: @_editColor; box-shadow: 2px 2px 0px @_editColor;">
+                            PREVIEW
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="flex gap-3 pt-2">
+                <NeubrutalistButton Text="@(_editing ? "Saving…" : "Save Changes")"
+                                    Variant="NeubrutalistButton.ButtonVariant.Secondary"
+                                    Disabled="@_editing"
+                                    OnClick="HandleEdit" />
+                <NeubrutalistButton Text="Cancel"
+                                    Variant="NeubrutalistButton.ButtonVariant.Ghost"
+                                    OnClick="CloseEditModal" />
+            </div>
+        </div>
+    </div>
+}
+
+@if (_showDeleteModal && _deleteTarget is not null)
+{
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4"
+         style="background: rgba(0,0,0,0.85);"
+         @onclick="CloseDeleteModal">
+
+        <div class="bg-base-surface border-2 border-hot-pink w-full max-w-sm p-6 space-y-5"
+             style="box-shadow: 4px 4px 0px #FF2D78;"
+             @onclick:stopPropagation="true">
+
+            <div class="flex items-center justify-between">
+                <h2 class="text-2xl font-black uppercase tracking-tight text-hot-pink">Delete Tag</h2>
+                <button @onclick="CloseDeleteModal"
+                        class="text-gray-500 hover:text-hot-pink font-black text-xl leading-none transition-colors">✕</button>
+            </div>
+
+            @if (_deleteError is not null)
+            {
+                <NeubrutalistAlert Severity="NeubrutalistAlert.AlertSeverity.Error" Message="@_deleteError" />
+            }
+
+            <div class="border-2 border-base-border p-4 flex items-center gap-3"
+                 style="box-shadow: 4px 4px 0px @_deleteTarget.Color;">
+                <div class="w-8 h-8 shrink-0 border-2 border-white/20"
+                     style="background-color: @_deleteTarget.Color;"></div>
+                <div>
+                    <p class="font-black text-soft-white">@_deleteTarget.Name</p>
+                    <p class="text-xs font-bold tracking-widest mt-0.5"
+                       style="color: @_deleteTarget.Color;">@_deleteTarget.Color.ToUpper()</p>
+                </div>
+            </div>
+
+            <p class="text-gray-400 text-sm">
+                This tag will be <span class="font-bold text-soft-white">soft-deleted</span> and removed from the tag list.
+                Transaction associations will be preserved in history.
+            </p>
+
+            <div class="flex gap-3 pt-1">
+                <NeubrutalistButton Text="@(_deleting ? "Deleting…" : "Yes, Delete")"
+                                    Variant="NeubrutalistButton.ButtonVariant.Danger"
+                                    Disabled="@_deleting"
+                                    OnClick="HandleDelete" />
+                <NeubrutalistButton Text="Cancel"
+                                    Variant="NeubrutalistButton.ButtonVariant.Ghost"
+                                    OnClick="CloseDeleteModal" />
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<TagManagementModel> _tags = [];
+    private bool _loading = true;
+    private string? _pageError;
+
+    private bool _showCreateModal;
+    private bool _creating;
+    private string? _createError;
+    private string? _nameError;
+    private CreateTagRequest _form = new();
+
+    private bool _showEditModal;
+    private bool _editing;
+    private string? _editError;
+    private string? _editNameError;
+    private TagManagementModel? _editingTag;
+    private UpdateTagRequest _editForm = new();
+    private string _editColor = "#FFFFFF";
+
+    private bool _showDeleteModal;
+    private bool _deleting;
+    private string? _deleteError;
+    private TagManagementModel? _deleteTarget;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _pageError = null;
+        try
+        {
+            var result = await TagService.GetTagsAsync();
+            _tags = result.OrderBy(t => t.Name).ToList();
+        }
+        catch (Exception ex)
+        {
+            _pageError = $"Failed to load tags: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+
+    private void OpenCreateModal()
+    {
+        _form = new CreateTagRequest { Color = "#39FF14" };
+        _createError = null;
+        _nameError = null;
+        _showCreateModal = true;
+    }
+
+    private void CloseCreateModal()
+    {
+        _showCreateModal = false;
+        _createError = null;
+        _nameError = null;
+    }
+
+    private async Task HandleCreate()
+    {
+        _nameError = null;
+        _createError = null;
+
+        if (string.IsNullOrWhiteSpace(_form.Name))
+        {
+            _nameError = "Tag name is required.";
+            return;
+        }
+
+        _creating = true;
+        try
+        {
+            var result = await TagService.CreateTagAsync(_form);
+            if (result is not null)
+            {
+                _tags.Add(result);
+                _tags = _tags.OrderBy(t => t.Name).ToList();
+                CloseCreateModal();
+            }
+            else
+            {
+                _createError = "Failed to create tag. Please try again.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _createError = ex.Message;
+        }
+        finally
+        {
+            _creating = false;
+        }
+    }
+
+
+    private void OpenEditModal(TagManagementModel tag)
+    {
+        _editingTag = tag;
+        _editForm = new UpdateTagRequest { Name = tag.Name, Color = tag.Color };
+        _editColor = string.IsNullOrWhiteSpace(tag.Color) ? "#FFFFFF" : tag.Color;
+        _editError = null;
+        _editNameError = null;
+        _showEditModal = true;
+    }
+
+    private void CloseEditModal()
+    {
+        _showEditModal = false;
+        _editingTag = null;
+        _editError = null;
+        _editNameError = null;
+    }
+
+    private async Task HandleEdit()
+    {
+        _editNameError = null;
+        _editError = null;
+
+        if (string.IsNullOrWhiteSpace(_editForm.Name))
+        {
+            _editNameError = "Tag name is required.";
+            return;
+        }
+
+        if (_editingTag is null) return;
+
+        _editForm.Color = _editColor;
+        _editing = true;
+        try
+        {
+            var result = await TagService.UpdateTagAsync(_editingTag.Id, _editForm);
+            if (result is not null)
+            {
+                var idx = _tags.FindIndex(t => t.Id == result.Id);
+                if (idx >= 0) _tags[idx] = result;
+                _tags = _tags.OrderBy(t => t.Name).ToList();
+                CloseEditModal();
+            }
+            else
+            {
+                _editError = "Failed to save changes. Please try again.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _editError = ex.Message;
+        }
+        finally
+        {
+            _editing = false;
+        }
+    }
+
+
+    private void OpenDeleteModal(TagManagementModel tag)
+    {
+        _deleteTarget = tag;
+        _deleteError = null;
+        _showDeleteModal = true;
+    }
+
+    private void CloseDeleteModal()
+    {
+        _showDeleteModal = false;
+        _deleteTarget = null;
+        _deleteError = null;
+    }
+
+    private async Task HandleDelete()
+    {
+        if (_deleteTarget is null) return;
+
+        _deleting = true;
+        _deleteError = null;
+        try
+        {
+            var ok = await TagService.DeleteTagAsync(_deleteTarget.Id);
+            if (ok)
+            {
+                _tags.RemoveAll(t => t.Id == _deleteTarget.Id);
+                CloseDeleteModal();
+            }
+            else
+            {
+                _deleteError = "Failed to delete tag. Please try again.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _deleteError = ex.Message;
+        }
+        finally
+        {
+            _deleting = false;
+        }
+    }
+}

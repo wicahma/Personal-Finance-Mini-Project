@@ -84,6 +84,8 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IDashboardApiService, ServerDashboardApiService>();
 builder.Services.AddScoped<IProfileClientService, ServerProfileClientService>();
 builder.Services.AddScoped<IAccountClientService, ServerAccountClientService>();
+builder.Services.AddScoped<ICategoryClientService, ServerCategoryClientService>();
+builder.Services.AddScoped<ITagClientService, ServerTagClientService>();
 
 WebApplication? app = builder.Build();
 
