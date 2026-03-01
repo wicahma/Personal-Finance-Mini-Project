@@ -71,3 +71,8 @@ npm-debug.log*
 
 appsettings.json
 !appsettings.Example.json
+
+# Tailwind CSS standalone binaries
+tools/tailwindcss.exe
+tools/tailwindcss-macos
+tools/tailwindcss-linux

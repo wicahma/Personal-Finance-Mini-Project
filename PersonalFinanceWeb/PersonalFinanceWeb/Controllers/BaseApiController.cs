@@ -7,6 +7,7 @@ namespace PersonalFinanceWeb.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[IgnoreAntiforgeryToken]
 public abstract class BaseApiController : ControllerBase
 {
     protected IActionResult OkData<T>(T data, string message = "Success", PaginationMeta? pagination = null)

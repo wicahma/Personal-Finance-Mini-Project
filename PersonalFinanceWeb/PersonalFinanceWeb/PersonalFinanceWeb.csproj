@@ -6,7 +6,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>aspnet-PersonalFinanceWeb-ac189582-92c6-46a5-8567-dc54d9efe6ae</UserSecretsId>
     <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
-    <TailwindExe>$(MSBuildThisFileDirectory)..\..\tools\tailwindcss.exe</TailwindExe>
+    <TailwindExe Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(MSBuildThisFileDirectory)..\..\tools\tailwindcss.exe</TailwindExe>
+    <TailwindExe Condition="$([MSBuild]::IsOSPlatform('OSX'))">$(MSBuildThisFileDirectory)../../tools/tailwindcss-macos</TailwindExe>
+    <TailwindExe Condition="$([MSBuild]::IsOSPlatform('Linux'))">$(MSBuildThisFileDirectory)../../tools/tailwindcss-linux</TailwindExe>
   </PropertyGroup>
 
   <ItemGroup>
@@ -32,6 +34,7 @@
       <TailwindMinify Condition="'$(Configuration)' == 'Release'">--minify</TailwindMinify>
       <TailwindMinify Condition="'$(Configuration)' != 'Release'"></TailwindMinify>
     </PropertyGroup>
+    <Exec Command="chmod +x &quot;$(TailwindExe)&quot;" Condition="!$([MSBuild]::IsOSPlatform('Windows'))" />
     <Exec Command="&quot;$(TailwindExe)&quot; -c tailwind.config.cjs -i wwwroot/tailwind.input.css -o wwwroot/app.css $(TailwindMinify)" WorkingDirectory="$(MSBuildThisFileDirectory)" />
   </Target>
 

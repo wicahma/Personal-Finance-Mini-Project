@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using PersonalFinance.Application.DTOs;
 using PersonalFinance.Application.Services;
 using PersonalFinance.Domain.Abstractions;
@@ -29,8 +30,19 @@ public sealed class UserProfileService : IUserProfileService
             DefaultCurrency = "USD",
             CreatedBy = identityUserId
         };
-        await _repo.AddAsync(newProfile, ct);
-        return MapToDto(newProfile);
+
+        try
+        {
+            await _repo.AddAsync(newProfile, ct);
+            return MapToDto(newProfile);
+        }
+        catch (DbUpdateException ex) when (ex.InnerException?.Message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase) == true
+                                        || ex.InnerException?.Message.Contains("IX_UserProfiles_IdentityUserId") == true)
+        {
+            var profile = await _repo.GetByIdentityUserIdAsync(identityUserId, ct)
+                ?? throw new InvalidOperationException($"UserProfile for identity '{identityUserId}' could not be found after duplicate key conflict.");
+            return MapToDto(profile);
+        }
     }
 
     public async Task<UserProfileDto> UpdateAsync(string identityUserId, UpdateProfileDto dto, CancellationToken ct = default)

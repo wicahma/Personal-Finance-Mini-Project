@@ -120,6 +120,8 @@ public class FinanceDbContext : IdentityDbContext<ApplicationUser>
                 .WithMany(x => x.TransactionTags)
                 .HasForeignKey(x => x.TagId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasQueryFilter(x => !x.Tag.IsDeleted && !x.Transaction.IsDeleted);
         });
 
         modelBuilder.Entity<Budget>(e =>
