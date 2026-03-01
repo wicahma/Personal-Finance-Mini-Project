@@ -29,12 +29,14 @@ public static class InfrastructureServiceExtensions
         services.AddScoped<ITagRepository, TagRepository>();
         services.AddScoped<ITransactionRepository, TransactionRepository>();
         services.AddScoped<IBudgetRepository, BudgetRepository>();
+        services.AddScoped<IFinancialGoalRepository, FinancialGoalRepository>();
 
         services.AddScoped<IAccountService, AccountService>();
         services.AddScoped<ICategoryService, CategoryService>();
         services.AddScoped<ITagService, TagService>();
         services.AddScoped<ITransactionService, TransactionService>();
         services.AddScoped<IBudgetService, BudgetService>();
+        services.AddScoped<IFinancialGoalService, FinancialGoalService>();
         services.AddScoped<IUserProfileService, UserProfileService>();
         services.AddScoped<IReportService, ReportService>();
 

@@ -1,0 +1,571 @@
+@page "/budgets"
+@rendermode InteractiveAuto
+@attribute [Authorize]
+
+@inject IBudgetClientService BudgetService
+@inject ICategoryClientService CategoryService
+
+<PageTitle>Budgets — FinanceOS</PageTitle>
+
+<div class="space-y-8">
+
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-4xl font-black uppercase tracking-tight text-soft-white">Budgets</h1>
+            <p class="text-gray-400 mt-1 text-sm font-medium tracking-wider">
+                Set monthly spending limits per category
+            </p>
+        </div>
+        <NeubrutalistButton Text="+ New Budget"
+                            Variant="NeubrutalistButton.ButtonVariant.Primary"
+                            OnClick="OpenCreateModal" />
+    </div>
+
+    <div class="flex items-center gap-4 border-2 border-base-border bg-base-surface p-4"
+         style="box-shadow: 4px 4px 0px #39FF14;">
+        <button @onclick="PreviousMonth"
+                class="w-10 h-10 flex items-center justify-center border-2 border-base-border text-gray-400
+                       hover:border-neon hover:text-neon font-black text-2xl transition-colors">
+            ‹
+        </button>
+        <div class="flex-1 text-center">
+            <span class="text-xl font-black uppercase tracking-widest text-soft-white">@_currentMonthDisplay</span>
+        </div>
+        <button @onclick="NextMonth"
+                class="w-10 h-10 flex items-center justify-center border-2 border-base-border text-gray-400
+                       hover:border-neon hover:text-neon font-black text-2xl transition-colors">
+            ›
+        </button>
+    </div>
+
+    @if (_loading)
+    {
+        <div class="flex items-center gap-3 text-gray-400">
+            <svg class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+            </svg>
+            <span class="text-sm font-semibold uppercase tracking-widest">Loading budgets…</span>
+        </div>
+    }
+    else
+    {
+        @if (_pageError is not null)
+        {
+            <NeubrutalistAlert Severity="NeubrutalistAlert.AlertSeverity.Error" Message="@_pageError" />
+        }
+
+        @if (!_budgets.Any())
+        {
+            <div class="border-2 border-dashed border-base-border p-12 text-center">
+                <p class="text-gray-500 text-lg font-bold uppercase tracking-widest">No budgets for @_currentMonthDisplay</p>
+                <p class="text-gray-600 text-sm mt-2">Set a spending limit for a category to start tracking.</p>
+            </div>
+        }
+        else
+        {
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-base-surface border-2 border-base-border p-4">
+                    <p class="text-xs font-bold uppercase tracking-widest text-gray-500">Total Budget</p>
+                    <p class="text-2xl font-black text-soft-white mt-1">@FormatCurrency(_budgets.Sum(x => x.BudgetAmount))</p>
+                </div>
+                <div class="bg-base-surface border-2 border-base-border p-4">
+                    <p class="text-xs font-bold uppercase tracking-widest text-gray-500">Total Spent</p>
+                    <p class="text-2xl font-black text-hot-pink mt-1">@FormatCurrency(_budgets.Sum(x => x.SpentAmount))</p>
+                </div>
+                <div class="bg-base-surface border-2 border-base-border p-4">
+                    <p class="text-xs font-bold uppercase tracking-widest text-gray-500">Remaining</p>
+                    <p class="text-2xl font-black text-neon mt-1">@FormatCurrency(_budgets.Sum(x => x.RemainingAmount))</p>
+                </div>
+                <div class="bg-base-surface border-2 border-base-border p-4">
+                    <p class="text-xs font-bold uppercase tracking-widest text-gray-500">Over Budget</p>
+                    <p class="text-2xl font-black text-vivid-yellow mt-1">@_budgets.Count(x => x.PercentageUsed >= 100) / @_budgets.Count</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                @foreach (var budget in _budgets)
+                {
+                    var clampedPct = Math.Min(budget.PercentageUsed, 100.0);
+                    var barColor = budget.PercentageUsed >= 100 ? "bg-pink-500"
+                                 : budget.PercentageUsed >= 80  ? "bg-yellow-400"
+                                 :                                "bg-lime-400";
+                    var accentColor = budget.PercentageUsed >= 100 ? "#FF2D78"
+                                    : budget.PercentageUsed >= 80  ? "#FACC15"
+                                    :                                "#39FF14";
+
+                    <div class="bg-base-surface border-2 border-base-border p-5 flex flex-col gap-4"
+                         style="box-shadow: 4px 4px 0px @accentColor;">
+
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 shrink-0 border-2 border-white/20"
+                                     style="background-color: @budget.CategoryIconOrColor;">
+                                </div>
+                                <div>
+                                    <h3 class="font-black text-soft-white text-lg leading-tight">@budget.CategoryName</h3>
+                                    <span class="text-xs font-bold uppercase tracking-widest text-gray-500">@budget.Month</span>
+                                </div>
+                            </div>
+                            @if (budget.PercentageUsed >= 100)
+                            {
+                                <span class="text-xs font-black uppercase tracking-widest border-2 border-hot-pink text-hot-pink px-2 py-0.5 shrink-0">OVER</span>
+                            }
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <p class="text-xs font-bold uppercase tracking-widest text-gray-500">Limit</p>
+                                <p class="font-black text-soft-white text-sm">@FormatCurrency(budget.BudgetAmount)</p>
+                            </div>
+                            <div>
+                                <p class="text-xs font-bold uppercase tracking-widest text-gray-500">Spent</p>
+                                <p class="font-black text-sm" style="color: @accentColor;">@FormatCurrency(budget.SpentAmount)</p>
+                            </div>
+                            <div class="col-span-2">
+                                <p class="text-xs font-bold uppercase tracking-widest text-gray-500">Remaining</p>
+                                <p class="font-black text-soft-white text-sm">@FormatCurrency(budget.RemainingAmount)</p>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-xs font-bold uppercase tracking-widest text-gray-500">Usage</span>
+                                <span class="text-xs font-black" style="color: @accentColor;">@budget.PercentageUsed.ToString("0.#")%</span>
+                            </div>
+                            <div class="border-2 border-white h-4 bg-base-bg overflow-hidden">
+                                <div class="h-full @barColor transition-all duration-300"
+                                     style="width: @(clampedPct.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))%;">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between border-t border-base-border pt-3 mt-auto">
+                            <button @onclick="() => OpenEditModal(budget)"
+                                    class="text-xs font-bold uppercase tracking-widest border-2 border-base-border px-3 py-1
+                                           text-gray-400 hover:border-vivid-yellow hover:text-vivid-yellow transition-colors">
+                                Edit
+                            </button>
+                            <button @onclick="() => OpenDeleteModal(budget)"
+                                    class="text-xs font-bold uppercase tracking-widest border-2 border-base-border px-3 py-1
+                                           text-gray-400 hover:border-hot-pink hover:text-hot-pink transition-colors">
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="border-t-2 border-base-border pt-5">
+                <span class="text-xs font-bold uppercase tracking-widest text-gray-500">
+                    @_budgets.Count budget(s) for <span class="text-soft-white">@_currentMonthDisplay</span>
+                </span>
+            </div>
+        }
+    }
+</div>
+
+@if (_showCreateModal)
+{
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4"
+         style="background: rgba(0,0,0,0.85);"
+         @onclick="CloseCreateModal">
+
+        <div class="bg-base-surface border-2 border-neon shadow-brutal-green w-full max-w-md p-6 space-y-6"
+             @onclick:stopPropagation="true">
+
+            <div class="flex items-center justify-between">
+                <h2 class="text-2xl font-black uppercase tracking-tight text-soft-white">New Budget</h2>
+                <button @onclick="CloseCreateModal"
+                        class="text-gray-500 hover:text-hot-pink font-black text-xl leading-none transition-colors">✕</button>
+            </div>
+
+            @if (_createError is not null)
+            {
+                <NeubrutalistAlert Severity="NeubrutalistAlert.AlertSeverity.Error" Message="@_createError" />
+            }
+
+            <div class="space-y-5">
+
+                <div class="flex flex-col gap-1">
+                    <label class="text-xs font-bold uppercase tracking-widest text-soft-white">Month</label>
+                    <div class="border-2 border-base-border px-3 py-2 bg-base-bg text-soft-white font-bold text-sm">
+                        @_currentMonthDisplay
+                    </div>
+                    <p class="text-xs text-gray-500">Budget will be created for the currently selected month.</p>
+                </div>
+
+                <div class="flex flex-col gap-1">
+                    <label class="text-xs font-bold uppercase tracking-widest text-soft-white">Expense Category</label>
+                    @if (_loadingCategories)
+                    {
+                        <p class="text-xs text-gray-500 py-2">Loading categories…</p>
+                    }
+                    else
+                    {
+                        <select @bind="_createCategoryId"
+                                class="border-2 border-base-border bg-base-bg text-soft-white px-3 py-2 text-sm font-bold
+                                       focus:border-neon focus:outline-none w-full appearance-none">
+                            <option value="">— Select a category —</option>
+                            @foreach (var cat in _expenseCategories)
+                            {
+                                <option value="@cat.Id">@cat.Name</option>
+                            }
+                        </select>
+                    }
+                    @if (_createCategoryError is not null)
+                    {
+                        <p class="text-xs text-hot-pink font-bold mt-1">@_createCategoryError</p>
+                    }
+                </div>
+
+                <NeubrutalistInput Label="Spending Limit"
+                                   Value="@_createAmountStr"
+                                   ValueChanged="@(v => _createAmountStr = v)"
+                                   Placeholder="e.g. 3000000"
+                                   Error="@_createAmountError" />
+
+            </div>
+
+            <div class="flex gap-3 pt-2">
+                <NeubrutalistButton Text="@(_creating ? "Creating…" : "Create Budget")"
+                                    Variant="NeubrutalistButton.ButtonVariant.Primary"
+                                    Disabled="@_creating"
+                                    OnClick="HandleCreate" />
+                <NeubrutalistButton Text="Cancel"
+                                    Variant="NeubrutalistButton.ButtonVariant.Ghost"
+                                    OnClick="CloseCreateModal" />
+            </div>
+        </div>
+    </div>
+}
+
+@if (_showEditModal && _editingBudget is not null)
+{
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4"
+         style="background: rgba(0,0,0,0.85);"
+         @onclick="CloseEditModal">
+
+        <div class="bg-base-surface border-2 border-vivid-yellow w-full max-w-md p-6 space-y-6"
+             style="box-shadow: 4px 4px 0px #FACC15;"
+             @onclick:stopPropagation="true">
+
+            <div class="flex items-center justify-between">
+                <h2 class="text-2xl font-black uppercase tracking-tight text-vivid-yellow">Edit Budget</h2>
+                <button @onclick="CloseEditModal"
+                        class="text-gray-500 hover:text-hot-pink font-black text-xl leading-none transition-colors">✕</button>
+            </div>
+
+            @if (_editError is not null)
+            {
+                <NeubrutalistAlert Severity="NeubrutalistAlert.AlertSeverity.Error" Message="@_editError" />
+            }
+
+            <div class="border-2 border-base-border p-4">
+                <p class="text-xs font-bold uppercase tracking-widest text-gray-500">Category</p>
+                <p class="font-black text-soft-white mt-1">@_editingBudget.CategoryName</p>
+                <p class="text-xs font-bold text-gray-500 mt-1">@_editingBudget.Month</p>
+            </div>
+
+            <NeubrutalistInput Label="New Spending Limit"
+                               Value="@_editAmountStr"
+                               ValueChanged="@(v => _editAmountStr = v)"
+                               Placeholder="e.g. 5000000"
+                               Error="@_editAmountError" />
+
+            <div class="flex gap-3 pt-2">
+                <NeubrutalistButton Text="@(_editing ? "Saving…" : "Save Changes")"
+                                    Variant="NeubrutalistButton.ButtonVariant.Secondary"
+                                    Disabled="@_editing"
+                                    OnClick="HandleEdit" />
+                <NeubrutalistButton Text="Cancel"
+                                    Variant="NeubrutalistButton.ButtonVariant.Ghost"
+                                    OnClick="CloseEditModal" />
+            </div>
+        </div>
+    </div>
+}
+
+@if (_showDeleteModal && _deleteTarget is not null)
+{
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4"
+         style="background: rgba(0,0,0,0.85);"
+         @onclick="CloseDeleteModal">
+
+        <div class="bg-base-surface border-2 border-hot-pink w-full max-w-sm p-6 space-y-5"
+             style="box-shadow: 4px 4px 0px #FF2D78;"
+             @onclick:stopPropagation="true">
+
+            <div class="flex items-center justify-between">
+                <h2 class="text-2xl font-black uppercase tracking-tight text-hot-pink">Delete Budget</h2>
+                <button @onclick="CloseDeleteModal"
+                        class="text-gray-500 hover:text-hot-pink font-black text-xl leading-none transition-colors">✕</button>
+            </div>
+
+            @if (_deleteError is not null)
+            {
+                <NeubrutalistAlert Severity="NeubrutalistAlert.AlertSeverity.Error" Message="@_deleteError" />
+            }
+
+            <div class="border-2 border-base-border p-4">
+                <p class="font-black text-soft-white">@_deleteTarget.CategoryName</p>
+                <p class="text-xs font-bold text-gray-500 mt-1">@_deleteTarget.Month — Limit: @FormatCurrency(_deleteTarget.BudgetAmount)</p>
+            </div>
+
+            <p class="text-gray-400 text-sm">
+                This budget will be <span class="font-bold text-soft-white">removed</span>. Transaction data is preserved.
+            </p>
+
+            <div class="flex gap-3 pt-1">
+                <NeubrutalistButton Text="@(_deleting ? "Deleting…" : "Yes, Delete")"
+                                    Variant="NeubrutalistButton.ButtonVariant.Danger"
+                                    Disabled="@_deleting"
+                                    OnClick="HandleDelete" />
+                <NeubrutalistButton Text="Cancel"
+                                    Variant="NeubrutalistButton.ButtonVariant.Ghost"
+                                    OnClick="CloseDeleteModal" />
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<BudgetModel> _budgets = [];
+    private List<CategoryManagementModel> _expenseCategories = [];
+    private bool _loading = true;
+    private bool _loadingCategories;
+    private string? _pageError;
+
+    private int _year = DateTime.Now.Year;
+    private int _month = DateTime.Now.Month;
+
+    private string CurrentMonth => $"{_year:D4}-{_month:D2}";
+    private string _currentMonthDisplay => new DateTime(_year, _month, 1).ToString("MMMM yyyy");
+
+    // Create
+    private bool _showCreateModal;
+    private bool _creating;
+    private string? _createError;
+    private string? _createCategoryError;
+    private string? _createAmountError;
+    private string _createCategoryId = string.Empty;
+    private string _createAmountStr = string.Empty;
+
+    // Edit
+    private bool _showEditModal;
+    private bool _editing;
+    private string? _editError;
+    private string? _editAmountError;
+    private BudgetModel? _editingBudget;
+    private string _editAmountStr = string.Empty;
+
+    // Delete
+    private bool _showDeleteModal;
+    private bool _deleting;
+    private string? _deleteError;
+    private BudgetModel? _deleteTarget;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _pageError = null;
+        try
+        {
+            _budgets = (await BudgetService.GetByMonthAsync(CurrentMonth)).OrderBy(x => x.CategoryName).ToList();
+        }
+        catch (Exception ex)
+        {
+            _pageError = $"Failed to load budgets: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task NavigateMonth(int delta)
+    {
+        var d = new DateTime(_year, _month, 1).AddMonths(delta);
+        _year = d.Year;
+        _month = d.Month;
+        await LoadAsync();
+    }
+
+    private Task PreviousMonth() => NavigateMonth(-1);
+    private Task NextMonth() => NavigateMonth(1);
+
+    private async Task OpenCreateModal()
+    {
+        _createCategoryId = string.Empty;
+        _createAmountStr = string.Empty;
+        _createError = _createCategoryError = _createAmountError = null;
+        _showCreateModal = true;
+
+        if (!_expenseCategories.Any())
+        {
+            _loadingCategories = true;
+            try
+            {
+                _expenseCategories = (await CategoryService.GetByTypeAsync("Expense")).ToList();
+            }
+            catch { /* fallback to empty */ }
+            finally
+            {
+                _loadingCategories = false;
+            }
+        }
+    }
+
+    private void CloseCreateModal()
+    {
+        _showCreateModal = false;
+        _createError = _createCategoryError = _createAmountError = null;
+    }
+
+    private async Task HandleCreate()
+    {
+        _createError = _createCategoryError = _createAmountError = null;
+
+        if (string.IsNullOrWhiteSpace(_createCategoryId) || !Guid.TryParse(_createCategoryId, out var categoryId))
+        {
+            _createCategoryError = "Please select a category.";
+            return;
+        }
+
+        if (!decimal.TryParse(_createAmountStr, out var amount) || amount <= 0)
+        {
+            _createAmountError = "Enter a valid spending limit greater than zero.";
+            return;
+        }
+
+        _creating = true;
+        try
+        {
+            var request = new CreateBudgetRequest
+            {
+                CategoryId = categoryId,
+                Month = CurrentMonth,
+                Amount = amount
+            };
+            var result = await BudgetService.CreateAsync(request);
+            if (result is not null)
+            {
+                _budgets.Add(result);
+                _budgets = _budgets.OrderBy(x => x.CategoryName).ToList();
+                CloseCreateModal();
+            }
+            else
+            {
+                _createError = "Failed to create budget. A budget for this category and month may already exist.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _createError = ex.Message;
+        }
+        finally
+        {
+            _creating = false;
+        }
+    }
+
+    private void OpenEditModal(BudgetModel budget)
+    {
+        _editingBudget = budget;
+        _editAmountStr = budget.BudgetAmount.ToString("0.##");
+        _editError = _editAmountError = null;
+        _showEditModal = true;
+    }
+
+    private void CloseEditModal()
+    {
+        _showEditModal = false;
+        _editingBudget = null;
+        _editError = _editAmountError = null;
+    }
+
+    private async Task HandleEdit()
+    {
+        _editError = _editAmountError = null;
+
+        if (!decimal.TryParse(_editAmountStr, out var amount) || amount <= 0)
+        {
+            _editAmountError = "Enter a valid spending limit greater than zero.";
+            return;
+        }
+
+        if (_editingBudget is null) return;
+
+        _editing = true;
+        try
+        {
+            var result = await BudgetService.UpdateAsync(_editingBudget.Id, new UpdateBudgetRequest { Amount = amount });
+            if (result is not null)
+            {
+                var idx = _budgets.FindIndex(x => x.Id == result.Id);
+                if (idx >= 0) _budgets[idx] = result;
+                CloseEditModal();
+            }
+            else
+            {
+                _editError = "Failed to save changes. Please try again.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _editError = ex.Message;
+        }
+        finally
+        {
+            _editing = false;
+        }
+    }
+
+    private void OpenDeleteModal(BudgetModel budget)
+    {
+        _deleteTarget = budget;
+        _deleteError = null;
+        _showDeleteModal = true;
+    }
+
+    private void CloseDeleteModal()
+    {
+        _showDeleteModal = false;
+        _deleteTarget = null;
+        _deleteError = null;
+    }
+
+    private async Task HandleDelete()
+    {
+        if (_deleteTarget is null) return;
+
+        _deleting = true;
+        _deleteError = null;
+        try
+        {
+            var ok = await BudgetService.DeleteAsync(_deleteTarget.Id);
+            if (ok)
+            {
+                _budgets.RemoveAll(x => x.Id == _deleteTarget.Id);
+                CloseDeleteModal();
+            }
+            else
+            {
+                _deleteError = "Failed to delete budget. Please try again.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _deleteError = ex.Message;
+        }
+        finally
+        {
+            _deleting = false;
+        }
+    }
+
+    private static string FormatCurrency(decimal amount)
+        => string.Format(System.Globalization.CultureInfo.InvariantCulture, "{0:N0}", amount);
+}

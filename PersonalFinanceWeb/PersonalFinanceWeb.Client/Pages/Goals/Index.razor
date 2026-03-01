@@ -1,0 +1,573 @@
+@page "/goals"
+@rendermode InteractiveAuto
+@attribute [Authorize]
+
+@inject IGoalClientService GoalService
+
+<PageTitle>Goals — FinanceOS</PageTitle>
+
+<div class="space-y-8">
+
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-4xl font-black uppercase tracking-tight text-soft-white">Goals</h1>
+            <p class="text-gray-400 mt-1 text-sm font-medium tracking-wider">
+                Track long-term saving targets and deadlines
+            </p>
+        </div>
+        <NeubrutalistButton Text="+ New Goal"
+                            Variant="NeubrutalistButton.ButtonVariant.Primary"
+                            OnClick="OpenCreateModal" />
+    </div>
+
+    @if (_loading)
+    {
+        <div class="flex items-center gap-3 text-gray-400">
+            <svg class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+            </svg>
+            <span class="text-sm font-semibold uppercase tracking-widest">Loading goals…</span>
+        </div>
+    }
+    else
+    {
+        @if (_pageError is not null)
+        {
+            <NeubrutalistAlert Severity="NeubrutalistAlert.AlertSeverity.Error" Message="@_pageError" />
+        }
+
+        @if (!_goals.Any())
+        {
+            <div class="border-2 border-dashed border-base-border p-12 text-center">
+                <p class="text-gray-500 text-lg font-bold uppercase tracking-widest">No goals yet</p>
+                <p class="text-gray-600 text-sm mt-2">Create your first goal — like a 2026 Wedding Fund with monthly contributions of 1,500,000.</p>
+            </div>
+        }
+        else
+        {
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                @foreach (var goal in _goals)
+                {
+                    var clampedPct = Math.Min(goal.ProgressPercentage, 100.0);
+                    var barColor = goal.ProgressPercentage >= 100 ? "bg-lime-400"
+                                 : goal.ProgressPercentage >= 80  ? "bg-yellow-400"
+                                 :                                  "bg-neon";
+                    var accentColor = goal.ProgressPercentage >= 100 ? "#39FF14"
+                                    : goal.ProgressPercentage >= 80  ? "#FACC15"
+                                    :                                  "#39FF14";
+                    var daysLeft = DaysUntilDeadline(goal.DeadlineDate);
+                    var monthlyEstimate = MonthlyEstimate(goal);
+                    var isOverdue = daysLeft < 0;
+
+                    <div class="bg-base-surface border-2 border-base-border p-5 flex flex-col gap-4"
+                         style="box-shadow: 4px 4px 0px @accentColor;">
+
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="flex-1 min-w-0">
+                                <h3 class="font-black text-soft-white text-lg leading-tight truncate" title="@goal.Name">
+                                    @goal.Name
+                                </h3>
+                                @if (!string.IsNullOrWhiteSpace(goal.Description))
+                                {
+                                    <p class="text-gray-500 text-xs mt-0.5 truncate">@goal.Description</p>
+                                }
+                            </div>
+                            <span class="text-xs font-black uppercase tracking-widest border-2 px-2 py-0.5 shrink-0
+                                         @(isOverdue ? "border-hot-pink text-hot-pink" : "border-base-border text-gray-400")">
+                                @(isOverdue ? "OVERDUE" : $"{daysLeft}d left")
+                            </span>
+                        </div>
+
+                        <div class="border-2 border-base-border p-3 bg-base-bg">
+                            <p class="text-xs font-bold uppercase tracking-widest text-gray-500">Remaining</p>
+                            <p class="text-3xl font-black text-soft-white mt-1 leading-none">
+                                @FormatCurrency(goal.RemainingAmount)
+                            </p>
+                            <p class="text-xs text-gray-500 mt-1">
+                                of <span class="text-soft-white font-bold">@FormatCurrency(goal.TargetAmount)</span> target
+                            </p>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <p class="text-xs font-bold uppercase tracking-widest text-gray-500">Saved</p>
+                                <p class="font-black text-neon text-sm">@FormatCurrency(goal.CurrentAmount)</p>
+                            </div>
+                            <div>
+                                <p class="text-xs font-bold uppercase tracking-widest text-gray-500">Need / mo</p>
+                                <p class="font-black text-vivid-yellow text-sm">@monthlyEstimate</p>
+                            </div>
+                        </div>
+
+                        <div>
+                            <p class="text-xs font-bold uppercase tracking-widest text-gray-500">Deadline</p>
+                            <p class="font-black text-soft-white text-sm">@FormatDeadline(goal.DeadlineDate)</p>
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-xs font-bold uppercase tracking-widest text-gray-500">Progress</span>
+                                <span class="text-xs font-black" style="color: @accentColor;">@goal.ProgressPercentage.ToString("0.#")%</span>
+                            </div>
+                            <div class="border-2 border-white h-4 bg-base-bg overflow-hidden">
+                                <div class="h-full @barColor transition-all duration-300"
+                                     style="width: @(clampedPct.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))%;">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between border-t border-base-border pt-3 mt-auto">
+                            <button @onclick="() => OpenEditModal(goal)"
+                                    class="text-xs font-bold uppercase tracking-widest border-2 border-base-border px-3 py-1
+                                           text-gray-400 hover:border-vivid-yellow hover:text-vivid-yellow transition-colors">
+                                Edit
+                            </button>
+                            <button @onclick="() => OpenDeleteModal(goal)"
+                                    class="text-xs font-bold uppercase tracking-widest border-2 border-base-border px-3 py-1
+                                           text-gray-400 hover:border-hot-pink hover:text-hot-pink transition-colors">
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="border-t-2 border-base-border pt-5">
+                <span class="text-xs font-bold uppercase tracking-widest text-gray-500">
+                    Total: <span class="text-soft-white">@_goals.Count</span> goal(s) ·
+                    Combined target: <span class="text-soft-white">@FormatCurrency(_goals.Sum(x => x.TargetAmount))</span>
+                </span>
+            </div>
+        }
+    }
+</div>
+
+@if (_showCreateModal)
+{
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4"
+         style="background: rgba(0,0,0,0.85);"
+         @onclick="CloseCreateModal">
+
+        <div class="bg-base-surface border-2 border-neon shadow-brutal-green w-full max-w-md p-6 space-y-6"
+             @onclick:stopPropagation="true">
+
+            <div class="flex items-center justify-between">
+                <h2 class="text-2xl font-black uppercase tracking-tight text-soft-white">New Goal</h2>
+                <button @onclick="CloseCreateModal"
+                        class="text-gray-500 hover:text-hot-pink font-black text-xl leading-none transition-colors">✕</button>
+            </div>
+
+            @if (_createError is not null)
+            {
+                <NeubrutalistAlert Severity="NeubrutalistAlert.AlertSeverity.Error" Message="@_createError" />
+            }
+
+            <div class="space-y-5">
+
+                <NeubrutalistInput Label="Goal Name"
+                                   Value="@_createNameStr"
+                                   ValueChanged="@(v => _createNameStr = v)"
+                                   Placeholder="e.g. 2026 Wedding Fund"
+                                   Error="@_createNameError" />
+
+                <NeubrutalistInput Label="Description (optional)"
+                                   Value="@_createDescStr"
+                                   ValueChanged="@(v => _createDescStr = v)"
+                                   Placeholder="e.g. Monthly contributions of 1,500,000" />
+
+                <NeubrutalistInput Label="Target Amount"
+                                   Value="@_createTargetStr"
+                                   ValueChanged="@(v => _createTargetStr = v)"
+                                   Placeholder="e.g. 18000000"
+                                   Error="@_createTargetError" />
+
+                <div class="flex flex-col gap-1">
+                    <label class="text-xs font-bold uppercase tracking-widest text-soft-white">Deadline Date</label>
+                    <input type="date"
+                           @bind="_createDeadline"
+                           @bind:format="yyyy-MM-dd"
+                           class="border-2 border-base-border bg-base-bg text-soft-white px-3 py-2 text-sm font-bold
+                                  focus:border-neon focus:outline-none w-full" />
+                    @if (_createDeadlineError is not null)
+                    {
+                        <p class="text-xs text-hot-pink font-bold mt-1">@_createDeadlineError</p>
+                    }
+                </div>
+
+            </div>
+
+            <div class="flex gap-3 pt-2">
+                <NeubrutalistButton Text="@(_creating ? "Creating…" : "Create Goal")"
+                                    Variant="NeubrutalistButton.ButtonVariant.Primary"
+                                    Disabled="@_creating"
+                                    OnClick="HandleCreate" />
+                <NeubrutalistButton Text="Cancel"
+                                    Variant="NeubrutalistButton.ButtonVariant.Ghost"
+                                    OnClick="CloseCreateModal" />
+            </div>
+        </div>
+    </div>
+}
+
+@if (_showEditModal && _editingGoal is not null)
+{
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4"
+         style="background: rgba(0,0,0,0.85);"
+         @onclick="CloseEditModal">
+
+        <div class="bg-base-surface border-2 border-vivid-yellow w-full max-w-md p-6 space-y-6"
+             style="box-shadow: 4px 4px 0px #FACC15;"
+             @onclick:stopPropagation="true">
+
+            <div class="flex items-center justify-between">
+                <h2 class="text-2xl font-black uppercase tracking-tight text-vivid-yellow">Edit Goal</h2>
+                <button @onclick="CloseEditModal"
+                        class="text-gray-500 hover:text-hot-pink font-black text-xl leading-none transition-colors">✕</button>
+            </div>
+
+            @if (_editError is not null)
+            {
+                <NeubrutalistAlert Severity="NeubrutalistAlert.AlertSeverity.Error" Message="@_editError" />
+            }
+
+            <div class="space-y-5">
+
+                <NeubrutalistInput Label="Goal Name"
+                                   Value="@_editNameStr"
+                                   ValueChanged="@(v => _editNameStr = v)"
+                                   Placeholder="Goal name"
+                                   Error="@_editNameError" />
+
+                <NeubrutalistInput Label="Description (optional)"
+                                   Value="@_editDescStr"
+                                   ValueChanged="@(v => _editDescStr = v)"
+                                   Placeholder="Short description" />
+
+                <NeubrutalistInput Label="Target Amount"
+                                   Value="@_editTargetStr"
+                                   ValueChanged="@(v => _editTargetStr = v)"
+                                   Placeholder="e.g. 18000000"
+                                   Error="@_editTargetError" />
+
+                <NeubrutalistInput Label="Amount Saved (update contributions)"
+                                   Value="@_editCurrentStr"
+                                   ValueChanged="@(v => _editCurrentStr = v)"
+                                   Placeholder="e.g. 7500000"
+                                   Error="@_editCurrentError" />
+
+                <div class="flex flex-col gap-1">
+                    <label class="text-xs font-bold uppercase tracking-widest text-soft-white">Deadline Date</label>
+                    <input type="date"
+                           @bind="_editDeadline"
+                           @bind:format="yyyy-MM-dd"
+                           class="border-2 border-base-border bg-base-bg text-soft-white px-3 py-2 text-sm font-bold
+                                  focus:border-neon focus:outline-none w-full" />
+                    @if (_editDeadlineError is not null)
+                    {
+                        <p class="text-xs text-hot-pink font-bold mt-1">@_editDeadlineError</p>
+                    }
+                </div>
+
+            </div>
+
+            <div class="flex gap-3 pt-2">
+                <NeubrutalistButton Text="@(_editing ? "Saving…" : "Save Changes")"
+                                    Variant="NeubrutalistButton.ButtonVariant.Secondary"
+                                    Disabled="@_editing"
+                                    OnClick="HandleEdit" />
+                <NeubrutalistButton Text="Cancel"
+                                    Variant="NeubrutalistButton.ButtonVariant.Ghost"
+                                    OnClick="CloseEditModal" />
+            </div>
+        </div>
+    </div>
+}
+
+@if (_showDeleteModal && _deleteTarget is not null)
+{
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4"
+         style="background: rgba(0,0,0,0.85);"
+         @onclick="CloseDeleteModal">
+
+        <div class="bg-base-surface border-2 border-hot-pink w-full max-w-sm p-6 space-y-5"
+             style="box-shadow: 4px 4px 0px #FF2D78;"
+             @onclick:stopPropagation="true">
+
+            <div class="flex items-center justify-between">
+                <h2 class="text-2xl font-black uppercase tracking-tight text-hot-pink">Delete Goal</h2>
+                <button @onclick="CloseDeleteModal"
+                        class="text-gray-500 hover:text-hot-pink font-black text-xl leading-none transition-colors">✕</button>
+            </div>
+
+            @if (_deleteError is not null)
+            {
+                <NeubrutalistAlert Severity="NeubrutalistAlert.AlertSeverity.Error" Message="@_deleteError" />
+            }
+
+            <div class="border-2 border-base-border p-4">
+                <p class="font-black text-soft-white">@_deleteTarget.Name</p>
+                <p class="text-xs font-bold text-gray-500 mt-1">Target: @FormatCurrency(_deleteTarget.TargetAmount) · Deadline: @FormatDeadline(_deleteTarget.DeadlineDate)</p>
+            </div>
+
+            <p class="text-gray-400 text-sm">
+                This goal will be <span class="font-bold text-soft-white">permanently removed</span> from your tracking list.
+            </p>
+
+            <div class="flex gap-3 pt-1">
+                <NeubrutalistButton Text="@(_deleting ? "Deleting…" : "Yes, Delete")"
+                                    Variant="NeubrutalistButton.ButtonVariant.Danger"
+                                    Disabled="@_deleting"
+                                    OnClick="HandleDelete" />
+                <NeubrutalistButton Text="Cancel"
+                                    Variant="NeubrutalistButton.ButtonVariant.Ghost"
+                                    OnClick="CloseDeleteModal" />
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<FinancialGoalModel> _goals = [];
+    private bool _loading = true;
+    private string? _pageError;
+
+    // Create
+    private bool _showCreateModal;
+    private bool _creating;
+    private string? _createError;
+    private string? _createNameError;
+    private string? _createTargetError;
+    private string? _createDeadlineError;
+    private string _createNameStr = string.Empty;
+    private string _createDescStr = string.Empty;
+    private string _createTargetStr = string.Empty;
+    private DateTime? _createDeadline;
+
+    // Edit
+    private bool _showEditModal;
+    private bool _editing;
+    private string? _editError;
+    private string? _editNameError;
+    private string? _editTargetError;
+    private string? _editCurrentError;
+    private string? _editDeadlineError;
+    private FinancialGoalModel? _editingGoal;
+    private string _editNameStr = string.Empty;
+    private string _editDescStr = string.Empty;
+    private string _editTargetStr = string.Empty;
+    private string _editCurrentStr = string.Empty;
+    private DateTime? _editDeadline;
+
+    // Delete
+    private bool _showDeleteModal;
+    private bool _deleting;
+    private string? _deleteError;
+    private FinancialGoalModel? _deleteTarget;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _pageError = null;
+        try
+        {
+            _goals = (await GoalService.GetAllAsync()).ToList();
+        }
+        catch (Exception ex)
+        {
+            _pageError = $"Failed to load goals: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void OpenCreateModal()
+    {
+        _createNameStr = _createDescStr = _createTargetStr = string.Empty;
+        _createDeadline = null;
+        _createError = _createNameError = _createTargetError = _createDeadlineError = null;
+        _showCreateModal = true;
+    }
+
+    private void CloseCreateModal()
+    {
+        _showCreateModal = false;
+        _createError = _createNameError = _createTargetError = _createDeadlineError = null;
+    }
+
+    private async Task HandleCreate()
+    {
+        _createError = _createNameError = _createTargetError = _createDeadlineError = null;
+
+        if (string.IsNullOrWhiteSpace(_createNameStr)) { _createNameError = "Goal name is required."; return; }
+        if (!decimal.TryParse(_createTargetStr, out var target) || target <= 0) { _createTargetError = "Enter a valid target amount greater than zero."; return; }
+        if (_createDeadline is null) { _createDeadlineError = "Deadline date is required."; return; }
+
+        _creating = true;
+        try
+        {
+            var request = new CreateGoalRequest
+            {
+                Name = _createNameStr.Trim(),
+                Description = string.IsNullOrWhiteSpace(_createDescStr) ? null : _createDescStr.Trim(),
+                TargetAmount = target,
+                DeadlineDate = _createDeadline!.Value.ToString("yyyy-MM-dd")
+            };
+            var result = await GoalService.CreateAsync(request);
+            if (result is not null)
+            {
+                _goals.Add(result);
+                CloseCreateModal();
+            }
+            else
+            {
+                _createError = "Failed to create goal. Please try again.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _createError = ex.Message;
+        }
+        finally
+        {
+            _creating = false;
+        }
+    }
+
+    private void OpenEditModal(FinancialGoalModel goal)
+    {
+        _editingGoal = goal;
+        _editNameStr = goal.Name;
+        _editDescStr = goal.Description ?? string.Empty;
+        _editTargetStr = goal.TargetAmount.ToString("0.##");
+        _editCurrentStr = goal.CurrentAmount.ToString("0.##");
+        _editDeadline = DateOnly.TryParse(goal.DeadlineDate, out var dl)
+            ? new DateTime(dl.Year, dl.Month, dl.Day)
+            : (DateTime?)null;
+        _editError = _editNameError = _editTargetError = _editCurrentError = _editDeadlineError = null;
+        _showEditModal = true;
+    }
+
+    private void CloseEditModal()
+    {
+        _showEditModal = false;
+        _editingGoal = null;
+        _editError = _editNameError = _editTargetError = _editCurrentError = _editDeadlineError = null;
+    }
+
+    private async Task HandleEdit()
+    {
+        _editError = _editNameError = _editTargetError = _editCurrentError = _editDeadlineError = null;
+
+        if (string.IsNullOrWhiteSpace(_editNameStr)) { _editNameError = "Goal name is required."; return; }
+        if (!decimal.TryParse(_editTargetStr, out var target) || target <= 0) { _editTargetError = "Enter a valid target amount greater than zero."; return; }
+        if (!decimal.TryParse(_editCurrentStr, out var current) || current < 0) { _editCurrentError = "Enter a valid saved amount (0 or more)."; return; }
+        if (_editDeadline is null) { _editDeadlineError = "Deadline date is required."; return; }
+        if (_editingGoal is null) return;
+
+        _editing = true;
+        try
+        {
+            var request = new UpdateGoalRequest
+            {
+                Name = _editNameStr.Trim(),
+                Description = string.IsNullOrWhiteSpace(_editDescStr) ? null : _editDescStr.Trim(),
+                TargetAmount = target,
+                CurrentAmount = current,
+                DeadlineDate = _editDeadline!.Value.ToString("yyyy-MM-dd")
+            };
+            var result = await GoalService.UpdateAsync(_editingGoal.Id, request);
+            if (result is not null)
+            {
+                var idx = _goals.FindIndex(x => x.Id == result.Id);
+                if (idx >= 0) _goals[idx] = result;
+                CloseEditModal();
+            }
+            else
+            {
+                _editError = "Failed to save changes. Please try again.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _editError = ex.Message;
+        }
+        finally
+        {
+            _editing = false;
+        }
+    }
+
+    private void OpenDeleteModal(FinancialGoalModel goal)
+    {
+        _deleteTarget = goal;
+        _deleteError = null;
+        _showDeleteModal = true;
+    }
+
+    private void CloseDeleteModal()
+    {
+        _showDeleteModal = false;
+        _deleteTarget = null;
+        _deleteError = null;
+    }
+
+    private async Task HandleDelete()
+    {
+        if (_deleteTarget is null) return;
+
+        _deleting = true;
+        _deleteError = null;
+        try
+        {
+            var ok = await GoalService.DeleteAsync(_deleteTarget.Id);
+            if (ok)
+            {
+                _goals.RemoveAll(x => x.Id == _deleteTarget.Id);
+                CloseDeleteModal();
+            }
+            else
+            {
+                _deleteError = "Failed to delete goal. Please try again.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _deleteError = ex.Message;
+        }
+        finally
+        {
+            _deleting = false;
+        }
+    }
+
+    private static int DaysUntilDeadline(string deadlineDateStr)
+    {
+        if (!DateOnly.TryParse(deadlineDateStr, out var deadline)) return 0;
+        return deadline.DayNumber - DateOnly.FromDateTime(DateTime.Today).DayNumber;
+    }
+
+    private static string MonthlyEstimate(FinancialGoalModel goal)
+    {
+        if (goal.RemainingAmount <= 0) return "Funded!";
+        if (!DateOnly.TryParse(goal.DeadlineDate, out var deadline)) return "N/A";
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        var months = (deadline.Year - today.Year) * 12 + (deadline.Month - today.Month);
+        if (months <= 0) return "Overdue";
+        var monthly = Math.Round(goal.RemainingAmount / months, 0);
+        return FormatCurrency(monthly) + " / mo";
+    }
+
+    private static string FormatDeadline(string deadlineDateStr)
+    {
+        if (!DateOnly.TryParse(deadlineDateStr, out var d)) return deadlineDateStr;
+        return d.ToString("d MMM yyyy");
+    }
+
+    private static string FormatCurrency(decimal amount)
+        => string.Format(System.Globalization.CultureInfo.InvariantCulture, "{0:N0}", amount);
+}

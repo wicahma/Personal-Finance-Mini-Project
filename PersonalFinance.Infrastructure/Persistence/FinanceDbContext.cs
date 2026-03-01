@@ -18,6 +18,7 @@ public class FinanceDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<Transaction> Transactions => Set<Transaction>();
     public DbSet<TransactionTag> TransactionTags => Set<TransactionTag>();
     public DbSet<Budget> Budgets => Set<Budget>();
+    public DbSet<FinancialGoal> FinancialGoals => Set<FinancialGoal>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -143,6 +144,21 @@ public class FinanceDbContext : IdentityDbContext<ApplicationUser>
                 .HasForeignKey(x => x.CategoryId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            e.HasQueryFilter(x => !x.IsDeleted);
+        });
+
+        modelBuilder.Entity<FinancialGoal>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Name).IsRequired().HasMaxLength(256);
+            e.Property(x => x.Description).HasMaxLength(1024);
+            e.Property(x => x.TargetAmount).HasColumnType("decimal(18,2)");
+            e.Property(x => x.CurrentAmount).HasColumnType("decimal(18,2)");
+            e.Property(x => x.CreatedBy).HasMaxLength(450);
+            e.HasOne(x => x.UserProfile)
+                .WithMany(x => x.FinancialGoals)
+                .HasForeignKey(x => x.UserProfileId)
+                .OnDelete(DeleteBehavior.Restrict);
             e.HasQueryFilter(x => !x.IsDeleted);
         });
     }

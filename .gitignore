@@ -4,6 +4,7 @@
 bin/
 obj/
 out/
+bin\Debug/
 
 # Visual Studio files
 .vs/

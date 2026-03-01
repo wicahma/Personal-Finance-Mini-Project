@@ -19,5 +19,7 @@ builder.Services.AddScoped<IAccountClientService, HttpAccountClientService>();
 builder.Services.AddScoped<ICategoryClientService, HttpCategoryClientService>();
 builder.Services.AddScoped<ITagClientService, HttpTagClientService>();
 builder.Services.AddScoped<ITransactionClientService, HttpTransactionClientService>();
+builder.Services.AddScoped<IBudgetClientService, HttpBudgetClientService>();
+builder.Services.AddScoped<IGoalClientService, HttpGoalClientService>();
 
 await builder.Build().RunAsync();
