@@ -76,3 +76,5 @@ appsettings.json
 tools/tailwindcss.exe
 tools/tailwindcss-macos
 tools/tailwindcss-linux
+tools/tailwindcss-macos
+tools/tailwindcss-linux
