@@ -1,90 +1,82 @@
-# PersonalFinance – Copilot Instructions
+# Copilot Instructions – PersonalFinance
 
 ## Architecture Overview
 
-Four-layer Clean Architecture with a Blazor Auto (SSR + WASM) front-end:
+Clean Architecture with four layers:
 
+| Project | Role |
+|---|---|
+| `PersonalFinance.Domain` | Entities, enums, repository interfaces, `IAuditableEntity` / `ISoftDelete` |
+| `PersonalFinance.Application` | Service interfaces, DTOs, `ApiResponse<T>` |
+| `PersonalFinance.Infrastructure` | EF Core, SQL Server, repository + service implementations |
+| `PersonalFinanceWeb/PersonalFinanceWeb` | Blazor **Auto** host: API controllers, server-side service impls, Identity |
+| `PersonalFinanceWeb/PersonalFinanceWeb.Client` | Blazor WASM: pages, HTTP client service impls, client-side models |
+
+## Dual-Mode Service Pattern (Critical)
+
+Blazor Auto renders components on the server first, then re-hydrates in WASM. Every feature therefore has **two service implementations** behind a shared `IXxxClientService` interface:
+
+- `Server*ClientService` (in `PersonalFinanceWeb/Services/`) — called during SSR; calls application services directly (no HTTP round-trip).
+- `Http*ClientService` (in `PersonalFinanceWeb.Client/Services/`) — called from WASM; hits the REST API via `HttpClient`.
+
+Both are registered against the same interface (server in `Program.cs`, client in `PersonalFinanceWeb.Client/Program.cs`). When adding a new feature, implement both.
+
+## API Response Contract
+
+All `/api/*` endpoints return `ApiResponse<T>` (`PersonalFinance.Application.Common.ApiResponse<T>`):
+```json
+{ "status": true, "message": "Success", "data": {...}, "pagination": null }
 ```
-PersonalFinance.Domain        → Entities, Enums, Repository interfaces, IAuditableEntity, ISoftDelete
-PersonalFinance.Application   → IXService interfaces, DTOs (records), ApiResponse<T>
-PersonalFinance.Infrastructure → EF Core DbContext, Repository & Service implementations, AddInfrastructure()
-PersonalFinanceWeb/
-  PersonalFinanceWeb          → ASP.NET Core host: Blazor SSR, REST API controllers, Identity, Server*ClientService
-  PersonalFinanceWeb.Client   → Blazor WASM: pages, Http*ClientService, client-side models
-```
+Use the `BaseApiController` helpers: `OkData<T>()`, `CreatedData<T>()`. API cookie auth returns 401/403 JSON (not redirect) when the path starts with `/api`.
 
-## Critical Pattern: Dual-Mode Client Services
+## User Scoping
 
-Every feature has **one interface**, **two implementations** — this is the project's most distinctive pattern.
+All domain data is keyed to `UserProfile.Id` (a `Guid`), not to the ASP.NET Identity `ApplicationUser.Id` (a `string`). Every controller action calls `GetUserProfileIdAsync(_profileService, ct)` (from `BaseApiController`) to resolve the profile Guid. `IUserProfileService.EnsureCreatedAsync` lazily creates a profile on first use.
 
-| Location                              | Class                    | How it works                           |
-| ------------------------------------- | ------------------------ | -------------------------------------- |
-| `PersonalFinanceWeb.Client/Services/` | `ITagClientService`      | Shared interface                       |
-| `PersonalFinanceWeb/Services/`        | `ServerTagClientService` | Calls `ITagService` directly (no HTTP) |
-| `PersonalFinanceWeb.Client/Services/` | `HttpTagClientService`   | Calls REST API via `HttpClient`        |
-
-Server `Program.cs` registers `Server*` implementations; WASM `Program.cs` registers `Http*` implementations. When adding a new feature, you must create **both** implementations.
-
-## User Identity Flow
-
-`ApplicationUser` (ASP.NET Identity) → `UserProfile` (domain entity, scoped to all data).
-
-- Controllers call `await GetUserProfileIdAsync(_profileService, ct)` — defined in `BaseApiController`.
-- Server client services call `_profileService.EnsureCreatedAsync(userId, ct)` via `IHttpContextAccessor`.
-- Every domain entity has a `UserProfileId` (Guid) FK — never query without scoping to it.
-
-## API Response Envelope
-
-All `/api/*` endpoints return `ApiResponse<T>` (`Status`, `Message`, `Data`, optional `Pagination`).  
-HTTP client services always check `response?.Status == true` before accessing `.Data`.
-
-```csharp
-// Controller
-return OkData(tags);                          // wraps in ApiResponse<T>.Success(...)
-return NotFound(ApiResponse<object>.Failure("Tag not found."));
-
-// Http client
-var response = await http.GetFromJsonAsync<ApiResponse<List<TagManagementModel>>>("api/tags", ct);
-return response?.Status == true && response.Data is not null ? response.Data : Array.Empty<TagManagementModel>();
-```
-
-## Domain Conventions
+## Entity Conventions
 
 - All entities implement `IAuditableEntity` (`CreatedAt`, `UpdatedAt`, `CreatedBy`) and `ISoftDelete` (`IsDeleted`).
-- Primary keys are `Guid`, initialized in the entity: `public Guid Id { get; set; } = Guid.NewGuid();`.
-- DTOs in the Application layer are `record` types, e.g., `record CreateTagDto(Guid UserProfileId, string Name, string Color)`.
-- Client-side view models live in `PersonalFinanceWeb.Client/Models/` — separate from Application DTOs.
+- EF Core **global query filters** on every entity exclude soft-deleted rows automatically — never filter manually on `IsDeleted`.
+- Enums (`AccountType`, `CategoryType`, `TransactionType`) are stored as **strings** in the database (`.HasConversion<string>()`).
+- `DbContextFactory<FinanceDbContext>` is registered as `Scoped` (not singleton).
+- Migrations history table: `__FinanceMigrationsHistory`. Run migrations from `PersonalFinanceWeb/PersonalFinanceWeb`.
 
-## Adding a New Feature (checklist)
+## Client-Side Models vs Application DTOs
 
-1. **Domain**: Add entity (implement `IAuditableEntity`, `ISoftDelete`), add repository interface in `Domain/Abstractions/`.
-2. **Application**: Add service interface (`IXService`) + DTOs in `Application/Services/` and `Application/DTOs/`.
-3. **Infrastructure**: Implement repository and service; register both in `InfrastructureServiceExtensions.AddInfrastructure()`.
-4. **API Controller**: Inherit `BaseApiController`, add `[Authorize]`, call `GetUserProfileIdAsync()`.
-5. **Client interface**: Add `IXClientService` in `PersonalFinanceWeb.Client/Services/`.
-6. **Server client service**: Add `ServerXClientService` in `PersonalFinanceWeb/Services/`; register in server `Program.cs`.
-7. **HTTP client service**: Add `HttpXClientService` in `PersonalFinanceWeb.Client/Services/`; register in WASM `Program.cs`.
-8. **EF Migration**: `cd PersonalFinance.Infrastructure && dotnet ef migrations add <Name> --startup-project ../PersonalFinanceWeb/PersonalFinanceWeb`
+WASM pages use types in `PersonalFinanceWeb.Client/Models/` (e.g. `TransactionListItem`, `TransactionDetailModel`). These differ from `PersonalFinance.Application.DTOs`. The `Server*ClientService` classes are responsible for mapping between them.
 
-## Developer Workflow
+## Transfer Transactions
 
-```powershell
-# Run the application (from repo root)
+A bank transfer creates **two linked `Transaction` records** both with `IsTransfer = true` and `TransferPairId` pointing to each other. Use `ITransactionService.CreateTransferAsync` and handle the pair when deleting or editing.
+
+## Styling
+
+Dark neobrutalism theme with Tailwind CSS. The Tailwind binary is bundled at `tools/tailwindcss-macos` (macOS) and is invoked **automatically by MSBuild before every build** — no separate CSS watch process needed. Key custom tokens defined in `tailwind.config.cjs`:
+- `neon` (#39FF14), `vivid-yellow` (#FFE600), `hot-pink` (#FF2D78)
+- `brutal-green/yellow/pink` box-shadow utilities
+- Dark base: `base-bg` / `base-surface` / `base-border`
+
+## Developer Workflows
+
+```bash
+# Run the app (from solution root)
 cd PersonalFinanceWeb/PersonalFinanceWeb && dotnet run
 
-# Add EF migration (from repo root)
-dotnet ef migrations add <Name> `
-  --project PersonalFinance.Infrastructure `
-  --startup-project PersonalFinanceWeb/PersonalFinanceWeb
+# Add EF migration
+cd PersonalFinanceWeb/PersonalFinanceWeb
+dotnet ef migrations add <Name> --project ../../PersonalFinance.Infrastructure
 
-# Rebuild Tailwind CSS
-tools/download-tailwind.ps1
+# Apply migrations
+dotnet ef database update --project ../../PersonalFinance.Infrastructure
+
+# Configuration (copy and fill in connection string + SMTP)
+cp appsettings.Example.json appsettings.json
+# Then add "DefaultConnection" via user-secrets or appsettings.json
 ```
 
 ## Key Files
 
-- [InfrastructureServiceExtensions.cs](PersonalFinance.Infrastructure/InfrastructureServiceExtensions.cs) — all DI registrations for Infrastructure
-- [BaseApiController.cs](PersonalFinanceWeb/PersonalFinanceWeb/Controllers/BaseApiController.cs) — `GetUserId()`, `GetUserProfileIdAsync()`, `OkData()`, `CreatedData()`
-- [ApiResponse.cs](PersonalFinance.Application/Common/ApiResponse.cs) — response envelope used everywhere
-- Server `Program.cs`: [PersonalFinanceWeb/PersonalFinanceWeb/Program.cs](PersonalFinanceWeb/PersonalFinanceWeb/Program.cs)
-- WASM `Program.cs`: [PersonalFinanceWeb/PersonalFinanceWeb.Client/Program.cs](PersonalFinanceWeb/PersonalFinanceWeb.Client/Program.cs)
+- [`PersonalFinance.Infrastructure/InfrastructureServiceExtensions.cs`](../PersonalFinance.Infrastructure/InfrastructureServiceExtensions.cs) — all DI registrations for infra layer
+- [`PersonalFinanceWeb/PersonalFinanceWeb/Controllers/BaseApiController.cs`](../PersonalFinanceWeb/PersonalFinanceWeb/Controllers/BaseApiController.cs) — shared controller base
+- [`PersonalFinance.Infrastructure/Persistence/FinanceDbContext.cs`](../PersonalFinance.Infrastructure/Persistence/FinanceDbContext.cs) — EF model configuration & query filters
+- [`PersonalFinanceWeb/PersonalFinanceWeb/tailwind.config.cjs`](../PersonalFinanceWeb/PersonalFinanceWeb/tailwind.config.cjs) — design token definitions

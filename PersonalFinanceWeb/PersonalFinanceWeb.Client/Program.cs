@@ -21,5 +21,6 @@ builder.Services.AddScoped<ITagClientService, HttpTagClientService>();
 builder.Services.AddScoped<ITransactionClientService, HttpTransactionClientService>();
 builder.Services.AddScoped<IBudgetClientService, HttpBudgetClientService>();
 builder.Services.AddScoped<IGoalClientService, HttpGoalClientService>();
+builder.Services.AddScoped<ICurrencyFormatterService, CurrencyFormatterService>();
 
 await builder.Build().RunAsync();

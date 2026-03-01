@@ -89,6 +89,7 @@ builder.Services.AddScoped<ITagClientService, ServerTagClientService>();
 builder.Services.AddScoped<ITransactionClientService, ServerTransactionClientService>();
 builder.Services.AddScoped<IBudgetClientService, ServerBudgetClientService>();
 builder.Services.AddScoped<IGoalClientService, ServerGoalClientService>();
+builder.Services.AddScoped<ICurrencyFormatterService, CurrencyFormatterService>();
 
 WebApplication? app = builder.Build();
 

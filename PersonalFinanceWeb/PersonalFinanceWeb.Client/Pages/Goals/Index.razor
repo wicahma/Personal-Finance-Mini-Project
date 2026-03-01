@@ -3,6 +3,7 @@
 @attribute [Authorize]
 
 @inject IGoalClientService GoalService
+@inject ICurrencyFormatterService CurrencyFormatter
 
 <PageTitle>Goals — FinanceOS</PageTitle>
 
@@ -176,11 +177,11 @@
                                    ValueChanged="@(v => _createDescStr = v)"
                                    Placeholder="e.g. Monthly contributions of 1,500,000" />
 
-                <NeubrutalistInput Label="Target Amount"
-                                   Value="@_createTargetStr"
-                                   ValueChanged="@(v => _createTargetStr = v)"
-                                   Placeholder="e.g. 18000000"
-                                   Error="@_createTargetError" />
+                <CurrencyInput Label="Target Amount"
+                               Required="true"
+                               Value="@_createTarget"
+                               ValueChanged="@(v => _createTarget = v)"
+                               Error="@_createTargetError" />
 
                 <div class="flex flex-col gap-1">
                     <label class="text-xs font-bold uppercase tracking-widest text-soft-white">Deadline Date</label>
@@ -244,17 +245,16 @@
                                    ValueChanged="@(v => _editDescStr = v)"
                                    Placeholder="Short description" />
 
-                <NeubrutalistInput Label="Target Amount"
-                                   Value="@_editTargetStr"
-                                   ValueChanged="@(v => _editTargetStr = v)"
-                                   Placeholder="e.g. 18000000"
-                                   Error="@_editTargetError" />
+                <CurrencyInput Label="Target Amount"
+                               Required="true"
+                               Value="@_editTarget"
+                               ValueChanged="@(v => _editTarget = v)"
+                               Error="@_editTargetError" />
 
-                <NeubrutalistInput Label="Amount Saved (update contributions)"
-                                   Value="@_editCurrentStr"
-                                   ValueChanged="@(v => _editCurrentStr = v)"
-                                   Placeholder="e.g. 7500000"
-                                   Error="@_editCurrentError" />
+                <CurrencyInput Label="Amount Saved (update contributions)"
+                               Value="@_editCurrent"
+                               ValueChanged="@(v => _editCurrent = v)"
+                               Error="@_editCurrentError" />
 
                 <div class="flex flex-col gap-1">
                     <label class="text-xs font-bold uppercase tracking-widest text-soft-white">Deadline Date</label>
@@ -341,7 +341,7 @@
     private string? _createDeadlineError;
     private string _createNameStr = string.Empty;
     private string _createDescStr = string.Empty;
-    private string _createTargetStr = string.Empty;
+    private decimal _createTarget;
     private DateTime? _createDeadline;
 
     // Edit
@@ -355,8 +355,8 @@
     private FinancialGoalModel? _editingGoal;
     private string _editNameStr = string.Empty;
     private string _editDescStr = string.Empty;
-    private string _editTargetStr = string.Empty;
-    private string _editCurrentStr = string.Empty;
+    private decimal _editTarget;
+    private decimal _editCurrent;
     private DateTime? _editDeadline;
 
     // Delete
@@ -387,7 +387,8 @@
 
     private void OpenCreateModal()
     {
-        _createNameStr = _createDescStr = _createTargetStr = string.Empty;
+        _createNameStr = _createDescStr = string.Empty;
+        _createTarget = 0m;
         _createDeadline = null;
         _createError = _createNameError = _createTargetError = _createDeadlineError = null;
         _showCreateModal = true;
@@ -404,7 +405,7 @@
         _createError = _createNameError = _createTargetError = _createDeadlineError = null;
 
         if (string.IsNullOrWhiteSpace(_createNameStr)) { _createNameError = "Goal name is required."; return; }
-        if (!decimal.TryParse(_createTargetStr, out var target) || target <= 0) { _createTargetError = "Enter a valid target amount greater than zero."; return; }
+        if (_createTarget <= 0) { _createTargetError = "Enter a valid target amount greater than zero."; return; }
         if (_createDeadline is null) { _createDeadlineError = "Deadline date is required."; return; }
 
         _creating = true;
@@ -414,7 +415,7 @@
             {
                 Name = _createNameStr.Trim(),
                 Description = string.IsNullOrWhiteSpace(_createDescStr) ? null : _createDescStr.Trim(),
-                TargetAmount = target,
+                TargetAmount = _createTarget,
                 DeadlineDate = _createDeadline!.Value.ToString("yyyy-MM-dd")
             };
             var result = await GoalService.CreateAsync(request);
@@ -443,8 +444,8 @@
         _editingGoal = goal;
         _editNameStr = goal.Name;
         _editDescStr = goal.Description ?? string.Empty;
-        _editTargetStr = goal.TargetAmount.ToString("0.##");
-        _editCurrentStr = goal.CurrentAmount.ToString("0.##");
+        _editTarget = goal.TargetAmount;
+        _editCurrent = goal.CurrentAmount;
         _editDeadline = DateOnly.TryParse(goal.DeadlineDate, out var dl)
             ? new DateTime(dl.Year, dl.Month, dl.Day)
             : (DateTime?)null;
@@ -464,8 +465,8 @@
         _editError = _editNameError = _editTargetError = _editCurrentError = _editDeadlineError = null;
 
         if (string.IsNullOrWhiteSpace(_editNameStr)) { _editNameError = "Goal name is required."; return; }
-        if (!decimal.TryParse(_editTargetStr, out var target) || target <= 0) { _editTargetError = "Enter a valid target amount greater than zero."; return; }
-        if (!decimal.TryParse(_editCurrentStr, out var current) || current < 0) { _editCurrentError = "Enter a valid saved amount (0 or more)."; return; }
+        if (_editTarget <= 0) { _editTargetError = "Enter a valid target amount greater than zero."; return; }
+        if (_editCurrent < 0) { _editCurrentError = "Enter a valid saved amount (0 or more)."; return; }
         if (_editDeadline is null) { _editDeadlineError = "Deadline date is required."; return; }
         if (_editingGoal is null) return;
 
@@ -476,8 +477,8 @@
             {
                 Name = _editNameStr.Trim(),
                 Description = string.IsNullOrWhiteSpace(_editDescStr) ? null : _editDescStr.Trim(),
-                TargetAmount = target,
-                CurrentAmount = current,
+                TargetAmount = _editTarget,
+                CurrentAmount = _editCurrent,
                 DeadlineDate = _editDeadline!.Value.ToString("yyyy-MM-dd")
             };
             var result = await GoalService.UpdateAsync(_editingGoal.Id, request);
@@ -551,7 +552,7 @@
         return deadline.DayNumber - DateOnly.FromDateTime(DateTime.Today).DayNumber;
     }
 
-    private static string MonthlyEstimate(FinancialGoalModel goal)
+    private string MonthlyEstimate(FinancialGoalModel goal)
     {
         if (goal.RemainingAmount <= 0) return "Funded!";
         if (!DateOnly.TryParse(goal.DeadlineDate, out var deadline)) return "N/A";
@@ -568,6 +569,6 @@
         return d.ToString("d MMM yyyy");
     }
 
-    private static string FormatCurrency(decimal amount)
-        => string.Format(System.Globalization.CultureInfo.InvariantCulture, "{0:N0}", amount);
+    private string FormatCurrency(decimal amount)
+        => CurrencyFormatter.Format(amount);
 }

@@ -4,6 +4,7 @@
 
 @inject IBudgetClientService BudgetService
 @inject ICategoryClientService CategoryService
+@inject ICurrencyFormatterService CurrencyFormatter
 
 <PageTitle>Budgets — FinanceOS</PageTitle>
 
@@ -219,11 +220,11 @@
                     }
                 </div>
 
-                <NeubrutalistInput Label="Spending Limit"
-                                   Value="@_createAmountStr"
-                                   ValueChanged="@(v => _createAmountStr = v)"
-                                   Placeholder="e.g. 3000000"
-                                   Error="@_createAmountError" />
+                <CurrencyInput Label="Spending Limit"
+                               Required="true"
+                               Value="@_createAmount"
+                               ValueChanged="@(v => _createAmount = v)"
+                               Error="@_createAmountError" />
 
             </div>
 
@@ -267,11 +268,11 @@
                 <p class="text-xs font-bold text-gray-500 mt-1">@_editingBudget.Month</p>
             </div>
 
-            <NeubrutalistInput Label="New Spending Limit"
-                               Value="@_editAmountStr"
-                               ValueChanged="@(v => _editAmountStr = v)"
-                               Placeholder="e.g. 5000000"
-                               Error="@_editAmountError" />
+            <CurrencyInput Label="New Spending Limit"
+                           Required="true"
+                           Value="@_editAmount"
+                           ValueChanged="@(v => _editAmount = v)"
+                           Error="@_editAmountError" />
 
             <div class="flex gap-3 pt-2">
                 <NeubrutalistButton Text="@(_editing ? "Saving…" : "Save Changes")"
@@ -349,7 +350,7 @@
     private string? _createCategoryError;
     private string? _createAmountError;
     private string _createCategoryId = string.Empty;
-    private string _createAmountStr = string.Empty;
+    private decimal _createAmount;
 
     // Edit
     private bool _showEditModal;
@@ -357,7 +358,7 @@
     private string? _editError;
     private string? _editAmountError;
     private BudgetModel? _editingBudget;
-    private string _editAmountStr = string.Empty;
+    private decimal _editAmount;
 
     // Delete
     private bool _showDeleteModal;
@@ -399,7 +400,7 @@
     private async Task OpenCreateModal()
     {
         _createCategoryId = string.Empty;
-        _createAmountStr = string.Empty;
+        _createAmount = 0m;
         _createError = _createCategoryError = _createAmountError = null;
         _showCreateModal = true;
 
@@ -434,7 +435,7 @@
             return;
         }
 
-        if (!decimal.TryParse(_createAmountStr, out var amount) || amount <= 0)
+        if (_createAmount <= 0)
         {
             _createAmountError = "Enter a valid spending limit greater than zero.";
             return;
@@ -447,7 +448,7 @@
             {
                 CategoryId = categoryId,
                 Month = CurrentMonth,
-                Amount = amount
+                Amount = _createAmount
             };
             var result = await BudgetService.CreateAsync(request);
             if (result is not null)
@@ -474,7 +475,7 @@
     private void OpenEditModal(BudgetModel budget)
     {
         _editingBudget = budget;
-        _editAmountStr = budget.BudgetAmount.ToString("0.##");
+        _editAmount = budget.BudgetAmount;
         _editError = _editAmountError = null;
         _showEditModal = true;
     }
@@ -490,7 +491,7 @@
     {
         _editError = _editAmountError = null;
 
-        if (!decimal.TryParse(_editAmountStr, out var amount) || amount <= 0)
+        if (_editAmount <= 0)
         {
             _editAmountError = "Enter a valid spending limit greater than zero.";
             return;
@@ -501,7 +502,7 @@
         _editing = true;
         try
         {
-            var result = await BudgetService.UpdateAsync(_editingBudget.Id, new UpdateBudgetRequest { Amount = amount });
+            var result = await BudgetService.UpdateAsync(_editingBudget.Id, new UpdateBudgetRequest { Amount = _editAmount });
             if (result is not null)
             {
                 var idx = _budgets.FindIndex(x => x.Id == result.Id);
@@ -566,6 +567,6 @@
         }
     }
 
-    private static string FormatCurrency(decimal amount)
-        => string.Format(System.Globalization.CultureInfo.InvariantCulture, "{0:N0}", amount);
+    private string FormatCurrency(decimal amount)
+        => CurrencyFormatter.Format(amount);
 }

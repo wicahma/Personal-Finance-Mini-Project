@@ -6,6 +6,7 @@
 @inject IAccountClientService AccountService
 @inject ICategoryClientService CategoryService
 @inject ITagClientService TagService
+@inject ICurrencyFormatterService CurrencyFormatter
 
 <PageTitle>Transactions — FinanceOS</PageTitle>
 
@@ -169,7 +170,7 @@
 
                                 <td class="px-4 py-3 text-right">
                                     <span class="text-base font-black @AmountColorClass(tx.Type)">
-                                        @AmountPrefix(tx.Type)@tx.Amount.ToString("N2")
+                                        @AmountPrefix(tx.Type)@CurrencyFormatter.Format(tx.Amount)
                                     </span>
                                 </td>
 
@@ -290,7 +291,7 @@
                     @_deleteTarget.AccountName
                     &nbsp;—&nbsp;
                     <span class="@AmountColorClass(_deleteTarget.Type)">
-                        @AmountPrefix(_deleteTarget.Type)@_deleteTarget.Amount.ToString("N2")
+                        @AmountPrefix(_deleteTarget.Type)@CurrencyFormatter.Format(_deleteTarget.Amount)
                     </span>
                 </p>
                 <p class="text-xs text-gray-500 mt-1 font-mono">

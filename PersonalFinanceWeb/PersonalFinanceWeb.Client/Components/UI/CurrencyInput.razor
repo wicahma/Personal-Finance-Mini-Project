@@ -1,0 +1,71 @@
+@inject ICurrencyFormatterService CurrencyFormatter
+
+<div class="flex flex-col gap-1">
+    @if (!string.IsNullOrWhiteSpace(Label))
+    {
+        <label class="text-xs font-bold uppercase tracking-widest text-soft-white">
+            @Label
+            @if (Required)
+            {
+                <span class="text-hot-pink ml-0.5">*</span>
+            }
+        </label>
+    }
+
+    <div class="flex items-stretch border-2 @(string.IsNullOrEmpty(Error) ? "border-base-border focus-within:border-neon" : "border-hot-pink") transition-colors duration-100">
+        <span class="flex items-center px-3 bg-base-surface text-gray-400 font-black text-sm border-r-2 @(string.IsNullOrEmpty(Error) ? "border-base-border" : "border-hot-pink") select-none shrink-0">
+            @CurrencyFormatter.CurrencySymbol
+        </span>
+        <input type="text"
+               inputmode="decimal"
+               value="@_displayValue"
+               placeholder="@(Placeholder ?? CurrencyFormatter.Format(0))"
+               disabled="@Disabled"
+               class="flex-1 bg-base-bg text-soft-white px-3 py-2.5 font-medium placeholder:text-gray-600 focus:outline-none"
+               @oninput="HandleInput"
+               @onblur="HandleBlur" />
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Error))
+    {
+        <span class="text-hot-pink text-xs font-semibold">@Error</span>
+    }
+</div>
+
+@code {
+    [Parameter] public string? Label { get; set; }
+    [Parameter] public bool Required { get; set; }
+    [Parameter] public decimal Value { get; set; }
+    [Parameter] public EventCallback<decimal> ValueChanged { get; set; }
+    [Parameter] public string? Placeholder { get; set; }
+    [Parameter] public string? Error { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+
+    private string _displayValue = string.Empty;
+    private decimal _lastValue;
+
+    protected override void OnParametersSet()
+    {
+        // Only reformat when the bound Value changes externally (avoid clobbering mid-type).
+        if (Value != _lastValue)
+        {
+            _lastValue = Value;
+            _displayValue = Value == 0 ? string.Empty : CurrencyFormatter.Format(Value);
+        }
+    }
+
+    private void HandleInput(ChangeEventArgs e)
+    {
+        // Let the user type freely — don't reformat mid-keystroke.
+        _displayValue = e.Value?.ToString() ?? string.Empty;
+    }
+
+    private async Task HandleBlur()
+    {
+        var parsed = CurrencyFormatter.Parse(_displayValue);
+        _lastValue = parsed;
+        // Reformat on blur so locale separators appear after the user finishes typing.
+        _displayValue = parsed == 0 ? string.Empty : CurrencyFormatter.Format(parsed);
+        await ValueChanged.InvokeAsync(parsed);
+    }
+}

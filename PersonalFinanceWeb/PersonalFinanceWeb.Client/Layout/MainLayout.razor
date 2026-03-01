@@ -1,4 +1,6 @@
 ﻿@inherits LayoutComponentBase
+@inject ICurrencyFormatterService CurrencyFormatter
+@implements IDisposable
 
 <div class="flex min-h-screen bg-base-bg">
 
@@ -111,3 +113,16 @@
     <a href="." class="reload">Reload</a>
     <span class="dismiss">🗙</span>
 </div>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        await CurrencyFormatter.InitializeAsync();
+        CurrencyFormatter.OnChange += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        CurrencyFormatter.OnChange -= StateHasChanged;
+    }
+}

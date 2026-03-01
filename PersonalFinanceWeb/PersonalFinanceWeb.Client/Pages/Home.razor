@@ -4,6 +4,7 @@
 
 @inject IDashboardApiService DashboardService
 @inject IJSRuntime JS
+@inject ICurrencyFormatterService CurrencyFormatter
 
 <PageTitle>Dashboard — FinanceOS</PageTitle>
 
@@ -319,8 +320,8 @@
         }
     }
 
-    private static string FormatCurrency(decimal amount)
-        => amount.ToString("C2", System.Globalization.CultureInfo.CreateSpecificCulture("en-US"));
+    private string FormatCurrency(decimal amount)
+        => CurrencyFormatter.Format(amount);
 
     private static string NetFlowClass(decimal amount)
         => amount >= 0 ? "text-neon" : "text-hot-pink";

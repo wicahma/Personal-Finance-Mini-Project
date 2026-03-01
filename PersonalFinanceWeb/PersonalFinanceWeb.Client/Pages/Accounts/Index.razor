@@ -3,6 +3,7 @@
 @attribute [Authorize]
 
 @inject IAccountClientService AccountService
+@inject ICurrencyFormatterService CurrencyFormatter
 
 <PageTitle>Accounts — FinanceOS</PageTitle>
 
@@ -92,7 +93,7 @@
                 <div>
                     <p class="text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">Balance</p>
                     <p class="font-black text-3xl" style="color: @TypeColor(account.Type);">
-                        @account.CurrentBalance.ToString("N2")
+                        @CurrencyFormatter.Format(account.CurrentBalance)
                     </p>
                 </div>
 
@@ -148,15 +149,15 @@
             <div class="border-t-2 border-base-border pt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div class="border-2 border-neon p-4 shadow-brutal-green">
                     <p class="text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">Net Worth</p>
-                    <p class="text-2xl font-black text-neon">@TotalBalance.ToString("N2")</p>
+                    <p class="text-2xl font-black text-neon">@CurrencyFormatter.Format(TotalBalance)</p>
                 </div>
                 <div class="border-2 p-4" style="border-color: #06B6D4; box-shadow: 4px 4px 0px #06B6D4;">
                     <p class="text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">Bank Total</p>
-                    <p class="text-2xl font-black" style="color: #06B6D4;">@BankBalance.ToString("N2")</p>
+                    <p class="text-2xl font-black" style="color: #06B6D4;">@CurrencyFormatter.Format(BankBalance)</p>
                 </div>
                 <div class="border-2 p-4" style="border-color: #84CC16; box-shadow: 4px 4px 0px #84CC16;">
                     <p class="text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">Cash / eWallet</p>
-                    <p class="text-2xl font-black" style="color: #84CC16;">@LiquidBalance.ToString("N2")</p>
+                    <p class="text-2xl font-black" style="color: #84CC16;">@CurrencyFormatter.Format(LiquidBalance)</p>
                 </div>
             </div>
         }
@@ -197,7 +198,7 @@
                     <div>
                         <p class="text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">Current Balance</p>
                         <p class="text-2xl font-black" style="color: @TypeColor(_adjustingAccount.Type);">
-                            @_adjustingAccount.CurrentBalance.ToString("N2")
+                            @CurrencyFormatter.Format(_adjustingAccount.CurrentBalance)
                         </p>
                     </div>
                     <span class="border-2 px-2 py-0.5 text-xs font-black tracking-widest"
@@ -207,17 +208,9 @@
                 </div>
 
                 @* New target balance *@
-                <div class="flex flex-col gap-1">
-                    <label class="text-xs font-bold uppercase tracking-widest text-soft-white">New Balance</label>
-                    <input type="number"
-                           step="0.01"
-                           value="@_adjustTarget"
-                           @oninput="@(e => { if (decimal.TryParse(e.Value?.ToString(), out var v)) _adjustTarget = v; })"
-                           placeholder="@_adjustingAccount.CurrentBalance.ToString("N2")"
-                           class="w-full bg-base-bg text-soft-white border-2 border-base-border px-4 py-2.5
-                                  font-medium placeholder:text-gray-600 focus:outline-none focus:border-hot-pink
-                                  transition-colors duration-100" />
-                </div>
+                <CurrencyInput Label="New Balance"
+                               Value="@_adjustTarget"
+                               ValueChanged="@(v => _adjustTarget = v)" />
 
                 @* Live diff preview *@
                 @{
@@ -228,7 +221,7 @@
                     <div class="border-2 p-3 @(adjDiff > 0 ? "border-neon" : "border-hot-pink")">
                         <p class="text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">Adjustment to be created</p>
                         <p class="font-black text-lg @(adjDiff > 0 ? "text-neon" : "text-hot-pink")">
-                            @(adjDiff > 0 ? "+" : "")@adjDiff.ToString("N2")
+                            @(adjDiff > 0 ? "+" : "")@CurrencyFormatter.Format(adjDiff)
                             <span class="text-xs font-semibold ml-2 @(adjDiff > 0 ? "text-neon" : "text-hot-pink")">
                                 @(adjDiff > 0 ? "INCOME" : "EXPENSE")
                             </span>
@@ -238,7 +231,7 @@
                 }
                 else if (_adjustTarget == _adjustingAccount.CurrentBalance)
                 {
-                    <p class="text-xs text-gray-500 font-semibold">No change — balance is already @_adjustingAccount.CurrentBalance.ToString("N2").</p>
+                    <p class="text-xs text-gray-500 font-semibold">No change — balance is already @CurrencyFormatter.Format(_adjustingAccount.CurrentBalance).</p>
                 }
 
             </div>
@@ -298,7 +291,7 @@
                 <div class="border-2 border-base-border p-4">
                     <p class="text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">Current Balance</p>
                     <p class="text-2xl font-black" style="color: @TypeColor(_editingAccount.Type);">
-                        @_editingAccount.CurrentBalance.ToString("N2")
+                        @CurrencyFormatter.Format(_editingAccount.CurrentBalance)
                     </p>
                     <p class="text-xs text-gray-600 mt-1">
                         Balance is updated automatically via transactions.
@@ -366,24 +359,12 @@
                     </select>
                 </div>
 
-                <div class="flex flex-col gap-1">
-                    <label class="text-xs font-bold uppercase tracking-widest text-soft-white">
-                        Initial Balance
-                        <span class="text-gray-500 ml-1 normal-case font-medium">(optional)</span>
-                    </label>
-                    <input type="number"
-                           min="0"
-                           step="0.01"
-                           value="@_form.InitialBalance"
-                           @oninput="@(e => { if (decimal.TryParse(e.Value?.ToString(), out var v)) _form.InitialBalance = v; })"
-                           placeholder="0.00"
-                           class="w-full bg-base-bg text-soft-white border-2 border-base-border px-4 py-2.5
-                                  font-medium placeholder:text-gray-600 focus:outline-none focus:border-neon
-                                  transition-colors duration-100" />
-                    <p class="text-xs text-gray-500">
-                        A ledger transaction will be auto-created to record the opening balance.
-                    </p>
-                </div>
+                <CurrencyInput Label="Initial Balance"
+                               Value="@_form.InitialBalance"
+                               ValueChanged="@(v => _form.InitialBalance = v)" />
+                <p class="text-xs text-gray-500">
+                    A ledger transaction will be auto-created to record the opening balance.
+                </p>
 
             </div>
 
