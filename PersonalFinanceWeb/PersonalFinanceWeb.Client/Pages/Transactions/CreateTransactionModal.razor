@@ -1,0 +1,446 @@
+@using PersonalFinanceWeb.Client.Models
+@inject ITransactionClientService TransactionService
+
+<div class="fixed inset-0 z-50 flex items-center justify-center p-4"
+     style="background: rgba(0,0,0,0.88);"
+     @onclick="HandleCancel">
+
+    <div class="bg-base-surface border-2 w-full max-w-lg p-6 space-y-5 overflow-y-auto max-h-[90vh]"
+         style="@ModalBorderStyle"
+         @onclick:stopPropagation="true">
+
+        <div class="flex items-center justify-between">
+            <h2 class="text-2xl font-black uppercase tracking-tight text-soft-white">
+                @(IsEditMode ? "Edit Transaction" : "New Transaction")
+            </h2>
+            <button @onclick="HandleCancel"
+                    class="text-gray-500 hover:text-hot-pink font-black text-xl leading-none transition-colors">
+                ✕
+            </button>
+        </div>
+
+        @if (!IsEditMode)
+        {
+            <div class="flex border-2 border-base-border">
+                <button @onclick='() => SetMode("transaction")'
+                        class="@TabClass("transaction") flex-1 py-2 text-xs font-black uppercase tracking-widest transition-colors">
+                    Income / Expense
+                </button>
+                <button @onclick='() => SetMode("transfer")'
+                        class="@TabClass("transfer") flex-1 py-2 text-xs font-black uppercase tracking-widest transition-colors border-l-2 border-base-border transition-colors">
+                    Transfer
+                </button>
+            </div>
+        }
+
+        @if (_error is not null)
+        {
+            <NeubrutalistAlert Severity="NeubrutalistAlert.AlertSeverity.Error" Message="@_error" />
+        }
+
+        @if (_mode == "transaction")
+        {
+            <div class="space-y-4">
+
+                <div class="flex flex-col gap-1">
+                    <label class="text-xs font-bold uppercase tracking-widest text-soft-white">Type</label>
+                    <select class="w-full bg-base-bg text-soft-white border-2 border-base-border px-4 py-2.5
+                                   font-medium focus:outline-none focus:border-neon transition-colors appearance-none"
+                            @bind="_type">
+                        <option value="Expense">Expense</option>
+                        <option value="Income">Income</option>
+                    </select>
+                </div>
+
+                <div class="flex flex-col gap-1">
+                    <label class="text-xs font-bold uppercase tracking-widest text-soft-white">Account <span class="text-hot-pink">*</span></label>
+                    <select class="w-full bg-base-bg text-soft-white border-2 border-base-border px-4 py-2.5
+                                   font-medium focus:outline-none focus:border-neon transition-colors appearance-none @(string.IsNullOrEmpty(_accountError) ? "" : "border-hot-pink")"
+                            @bind="_accountIdStr">
+                        <option value="">— Select account —</option>
+                        @foreach (var acc in Accounts.Where(a => !a.IsArchived))
+                        {
+                            <option value="@acc.Id">@acc.Name (@acc.Type)</option>
+                        }
+                    </select>
+                    @if (!string.IsNullOrEmpty(_accountError))
+                    {
+                        <span class="text-xs font-bold text-hot-pink">@_accountError</span>
+                    }
+                </div>
+
+                <div class="flex flex-col gap-1">
+                    <label class="text-xs font-bold uppercase tracking-widest text-soft-white">Amount <span class="text-hot-pink">*</span></label>
+                    <input type="number" min="0.01" step="0.01"
+                           @bind="_amount"
+                           placeholder="0.00"
+                           class="w-full bg-base-bg text-soft-white border-2 border-base-border px-4 py-2.5
+                                  font-medium placeholder:text-gray-600 focus:outline-none focus:border-neon
+                                  transition-colors @(string.IsNullOrEmpty(_amountError) ? "" : "border-hot-pink")" />
+                    @if (!string.IsNullOrEmpty(_amountError))
+                    {
+                        <span class="text-xs font-bold text-hot-pink">@_amountError</span>
+                    }
+                </div>
+
+                <div class="flex flex-col gap-1">
+                    <label class="text-xs font-bold uppercase tracking-widest text-soft-white">Date</label>
+                    <input type="date"
+                           @bind="_date" @bind:format="yyyy-MM-dd"
+                           class="w-full bg-base-bg text-soft-white border-2 border-base-border px-4 py-2.5
+                                  font-medium focus:outline-none focus:border-neon transition-colors [color-scheme:dark]" />
+                </div>
+
+                <div class="flex flex-col gap-1">
+                    <label class="text-xs font-bold uppercase tracking-widest text-soft-white">Category <span class="text-gray-500 font-medium normal-case tracking-normal text-xs">(optional)</span></label>
+                    <select class="w-full bg-base-bg text-soft-white border-2 border-base-border px-4 py-2.5
+                                   font-medium focus:outline-none focus:border-neon transition-colors appearance-none"
+                            @bind="_categoryIdStr">
+                        <option value="">— None —</option>
+                        @foreach (var cat in FilteredCategories)
+                        {
+                            <option value="@cat.Id">@cat.Name</option>
+                        }
+                    </select>
+                </div>
+
+                @if (Tags.Any())
+                {
+                    <div class="flex flex-col gap-1">
+                        <label class="text-xs font-bold uppercase tracking-widest text-soft-white">Tags <span class="text-gray-500 font-medium normal-case tracking-normal text-xs">(optional)</span></label>
+                        <div class="max-h-32 overflow-y-auto border-2 border-base-border p-3 bg-base-bg space-y-2">
+                            @foreach (var tag in Tags)
+                            {
+                                <label class="flex items-center gap-2.5 cursor-pointer select-none">
+                                    <input type="checkbox"
+                                           checked="@_selectedTagIds.Contains(tag.Id)"
+                                           @onchange="@(_ => ToggleTag(tag.Id))"
+                                           class="border-2 border-base-border accent-neon w-4 h-4 shrink-0" />
+                                    <span class="w-3 h-3 rounded-full shrink-0 border border-white/20"
+                                          style="background-color: @tag.Color;"></span>
+                                    <span class="text-sm font-medium text-soft-white">@tag.Name</span>
+                                </label>
+                            }
+                        </div>
+                    </div>
+                }
+
+                <div class="flex flex-col gap-1">
+                    <label class="text-xs font-bold uppercase tracking-widest text-soft-white">Notes <span class="text-gray-500 font-medium normal-case tracking-normal text-xs">(optional)</span></label>
+                    <textarea rows="2"
+                              @bind="_notes"
+                              placeholder="Optional note…"
+                              class="w-full bg-base-bg text-soft-white border-2 border-base-border px-4 py-2.5
+                                     font-medium placeholder:text-gray-600 focus:outline-none focus:border-neon
+                                     transition-colors resize-none"></textarea>
+                </div>
+
+            </div>
+
+            <div class="flex gap-3 pt-1">
+                <NeubrutalistButton Text="@SubmitLabel"
+                                    Variant="NeubrutalistButton.ButtonVariant.Primary"
+                                    Disabled="@_submitting"
+                                    OnClick="HandleSubmitTransaction" />
+                <NeubrutalistButton Text="Cancel"
+                                    Variant="NeubrutalistButton.ButtonVariant.Ghost"
+                                    OnClick="HandleCancel" />
+            </div>
+        }
+
+        @if (_mode == "transfer")
+        {
+            <div class="space-y-4">
+
+                <div class="flex flex-col gap-1">
+                    <label class="text-xs font-bold uppercase tracking-widest text-soft-white">From Account <span class="text-hot-pink">*</span></label>
+                    <select class="w-full bg-base-bg text-soft-white border-2 border-base-border px-4 py-2.5
+                                   font-medium focus:outline-none focus:border-vivid-yellow transition-colors appearance-none"
+                            @bind="_fromAccountIdStr">
+                        <option value="">— Select source —</option>
+                        @foreach (var acc in Accounts.Where(a => !a.IsArchived))
+                        {
+                            <option value="@acc.Id">@acc.Name (@acc.Type)</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="flex flex-col gap-1">
+                    <label class="text-xs font-bold uppercase tracking-widest text-soft-white">To Account <span class="text-hot-pink">*</span></label>
+                    <select class="w-full bg-base-bg text-soft-white border-2 border-base-border px-4 py-2.5
+                                   font-medium focus:outline-none focus:border-vivid-yellow transition-colors appearance-none"
+                            @bind="_toAccountIdStr">
+                        <option value="">— Select destination —</option>
+                        @foreach (var acc in Accounts.Where(a => !a.IsArchived))
+                        {
+                            <option value="@acc.Id">@acc.Name (@acc.Type)</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="flex flex-col gap-1">
+                    <label class="text-xs font-bold uppercase tracking-widest text-soft-white">Amount <span class="text-hot-pink">*</span></label>
+                    <input type="number" min="0.01" step="0.01"
+                           @bind="_transferAmount"
+                           placeholder="0.00"
+                           class="w-full bg-base-bg text-soft-white border-2 border-base-border px-4 py-2.5
+                                  font-medium placeholder:text-gray-600 focus:outline-none focus:border-vivid-yellow transition-colors" />
+                </div>
+
+                <div class="flex flex-col gap-1">
+                    <label class="text-xs font-bold uppercase tracking-widest text-soft-white">Date</label>
+                    <input type="date"
+                           @bind="_transferDate" @bind:format="yyyy-MM-dd"
+                           class="w-full bg-base-bg text-soft-white border-2 border-base-border px-4 py-2.5
+                                  font-medium focus:outline-none focus:border-vivid-yellow transition-colors [color-scheme:dark]" />
+                </div>
+
+                <div class="flex flex-col gap-1">
+                    <label class="text-xs font-bold uppercase tracking-widest text-soft-white">Notes <span class="text-gray-500 font-medium normal-case tracking-normal text-xs">(optional)</span></label>
+                    <textarea rows="2"
+                              @bind="_transferNotes"
+                              placeholder="Optional note…"
+                              class="w-full bg-base-bg text-soft-white border-2 border-base-border px-4 py-2.5
+                                     font-medium placeholder:text-gray-600 focus:outline-none focus:border-vivid-yellow
+                                     transition-colors resize-none"></textarea>
+                </div>
+
+            </div>
+
+            <div class="flex gap-3 pt-1">
+                <NeubrutalistButton Text="@(_submitting ? "Transferring…" : "Execute Transfer")"
+                                    Variant="NeubrutalistButton.ButtonVariant.Secondary"
+                                    Disabled="@_submitting"
+                                    OnClick="HandleSubmitTransfer" />
+                <NeubrutalistButton Text="Cancel"
+                                    Variant="NeubrutalistButton.ButtonVariant.Ghost"
+                                    OnClick="HandleCancel" />
+            </div>
+        }
+
+    </div>
+</div>
+
+@code {
+    [Parameter] public EventCallback OnCreated { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+    [Parameter] public TransactionDetailModel? ExistingTransaction { get; set; }
+    [Parameter] public IReadOnlyList<AccountModel> Accounts { get; set; } = [];
+    [Parameter] public IReadOnlyList<CategoryManagementModel> Categories { get; set; } = [];
+    [Parameter] public IReadOnlyList<TagManagementModel> Tags { get; set; } = [];
+
+    private string _mode = "transaction";
+
+    private Guid _accountId;
+    private Guid? _categoryId;
+    private decimal _amount;
+    private DateTime _date = DateTime.Today;
+    private string _type = "Expense";
+    private string _notes = string.Empty;
+    private HashSet<Guid> _selectedTagIds = [];
+
+    private Guid _fromAccountId;
+    private Guid _toAccountId;
+    private decimal _transferAmount;
+    private DateTime _transferDate = DateTime.Today;
+    private string _transferNotes = string.Empty;
+
+    private bool _submitting;
+    private string? _error;
+    private string? _accountError;
+    private string? _amountError;
+
+    private Guid? _lastInitId;
+
+    private bool IsEditMode => ExistingTransaction is not null;
+
+    private string SubmitLabel =>
+        _submitting ? (IsEditMode ? "Saving…" : "Creating…") : (IsEditMode ? "Save Changes" : "Add Transaction");
+
+    private string ModalBorderStyle => _mode == "transfer"
+        ? "border-color: #FACC15; box-shadow: 4px 4px 0px #FACC15;"
+        : "border-color: #39FF14; box-shadow: 4px 4px 0px #39FF14;";
+
+    private string TabClass(string tab) =>
+        _mode == tab
+            ? "bg-neon text-black"
+            : "bg-transparent text-gray-400 hover:text-soft-white";
+
+    private IEnumerable<CategoryManagementModel> FilteredCategories =>
+        Categories.Where(c => string.Equals(c.Type, _type, StringComparison.OrdinalIgnoreCase));
+
+    private string _accountIdStr
+    {
+        get => _accountId == Guid.Empty ? "" : _accountId.ToString();
+        set => _accountId = Guid.TryParse(value, out var g) ? g : Guid.Empty;
+    }
+
+    private string _categoryIdStr
+    {
+        get => _categoryId.HasValue ? _categoryId.Value.ToString() : "";
+        set => _categoryId = Guid.TryParse(value, out var g) ? g : null;
+    }
+
+    private string _fromAccountIdStr
+    {
+        get => _fromAccountId == Guid.Empty ? "" : _fromAccountId.ToString();
+        set => _fromAccountId = Guid.TryParse(value, out var g) ? g : Guid.Empty;
+    }
+
+    private string _toAccountIdStr
+    {
+        get => _toAccountId == Guid.Empty ? "" : _toAccountId.ToString();
+        set => _toAccountId = Guid.TryParse(value, out var g) ? g : Guid.Empty;
+    }
+
+    protected override void OnParametersSet()
+    {
+        var currentId = ExistingTransaction?.Id;
+        if (currentId == _lastInitId) return;
+        _lastInitId = currentId;
+
+        _error = null;
+        _accountError = null;
+        _amountError = null;
+        _submitting = false;
+        _mode = "transaction";
+
+        if (ExistingTransaction is not null)
+        {
+            _accountId = ExistingTransaction.AccountId;
+            _categoryId = ExistingTransaction.CategoryId;
+            _amount = ExistingTransaction.Amount;
+            _date = ExistingTransaction.Date;
+            _type = ExistingTransaction.Type;
+            _notes = ExistingTransaction.Notes;
+            _selectedTagIds = ExistingTransaction.Tags.Select(t => t.Id).ToHashSet();
+        }
+        else
+        {
+            _accountId = Guid.Empty;
+            _categoryId = null;
+            _amount = 0;
+            _date = DateTime.Today;
+            _type = "Expense";
+            _notes = string.Empty;
+            _selectedTagIds = [];
+            _fromAccountId = Guid.Empty;
+            _toAccountId = Guid.Empty;
+            _transferAmount = 0;
+            _transferDate = DateTime.Today;
+            _transferNotes = string.Empty;
+        }
+    }
+
+    private void SetMode(string mode)
+    {
+        _mode = mode;
+        _error = null;
+        _accountError = null;
+        _amountError = null;
+    }
+
+    private void ToggleTag(Guid tagId)
+    {
+        if (!_selectedTagIds.Add(tagId))
+            _selectedTagIds.Remove(tagId);
+    }
+
+    private async Task HandleCancel() => await OnCancel.InvokeAsync();
+
+    private async Task HandleSubmitTransaction()
+    {
+        _error = null;
+        _accountError = null;
+        _amountError = null;
+
+        var valid = true;
+        if (_accountId == Guid.Empty) { _accountError = "Please select an account."; valid = false; }
+        if (_amount <= 0) { _amountError = "Amount must be greater than zero."; valid = false; }
+        if (!valid) return;
+
+        _submitting = true;
+        try
+        {
+            if (IsEditMode)
+            {
+                var req = new UpdateTransactionRequest
+                {
+                    Amount = _amount,
+                    Date = _date,
+                    CategoryId = _categoryId,
+                    Type = _type,
+                    Notes = _notes,
+                    TagIds = _selectedTagIds.ToList()
+                };
+                var result = await TransactionService.UpdateAsync(ExistingTransaction!.Id, req);
+                if (result is not null)
+                    await OnCreated.InvokeAsync();
+                else
+                    _error = "Failed to update transaction. Please try again.";
+            }
+            else
+            {
+                var req = new CreateTransactionRequest
+                {
+                    AccountId = _accountId,
+                    CategoryId = _categoryId,
+                    Amount = _amount,
+                    Date = _date,
+                    Type = _type,
+                    Notes = _notes,
+                    TagIds = _selectedTagIds.ToList()
+                };
+                var result = await TransactionService.CreateAsync(req);
+                if (result is not null)
+                    await OnCreated.InvokeAsync();
+                else
+                    _error = "Failed to create transaction. Please try again.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _submitting = false;
+        }
+    }
+
+    private async Task HandleSubmitTransfer()
+    {
+        _error = null;
+
+        if (_fromAccountId == Guid.Empty) { _error = "Please select a source account."; return; }
+        if (_toAccountId == Guid.Empty) { _error = "Please select a destination account."; return; }
+        if (_fromAccountId == _toAccountId) { _error = "Source and destination accounts must be different."; return; }
+        if (_transferAmount <= 0) { _error = "Amount must be greater than zero."; return; }
+
+        _submitting = true;
+        try
+        {
+            var req = new CreateTransferRequest
+            {
+                FromAccountId = _fromAccountId,
+                ToAccountId = _toAccountId,
+                Amount = _transferAmount,
+                Date = _transferDate,
+                Notes = _transferNotes
+            };
+            var ok = await TransactionService.CreateTransferAsync(req);
+            if (ok)
+                await OnCreated.InvokeAsync();
+            else
+                _error = "Transfer failed. Please try again.";
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _submitting = false;
+        }
+    }
+}

@@ -12,17 +12,18 @@ namespace PersonalFinance.Infrastructure.Services;
 public sealed class TransactionService : ITransactionService
 {
     private readonly ITransactionRepository _repo;
-    private readonly FinanceDbContext _db;
+    private readonly IDbContextFactory<FinanceDbContext> _factory;
 
-    public TransactionService(ITransactionRepository repo, FinanceDbContext db)
+    public TransactionService(ITransactionRepository repo, IDbContextFactory<FinanceDbContext> factory)
     {
         _repo = repo;
-        _db = db;
+        _factory = factory;
     }
 
     public async Task<TransactionDetailDto?> GetDetailByIdAsync(Guid id, CancellationToken ct = default)
     {
-        var e = await _db.Transactions
+        await using var db = _factory.CreateDbContext();
+        var e = await db.Transactions
             .Include(x => x.Account)
             .Include(x => x.Category)
             .Include(x => x.TransactionTags).ThenInclude(x => x.Tag)
@@ -38,7 +39,9 @@ public sealed class TransactionService : ITransactionService
 
     public async Task<PagedList<TransactionDto>> GetPagedAsync(Guid userProfileId, TransactionQueryDto query, CancellationToken ct = default)
     {
-        var q = _db.Transactions
+        await using var db = _factory.CreateDbContext();
+
+        var q = db.Transactions
             .Include(x => x.Account)
             .Include(x => x.Category)
             .Include(x => x.TransactionTags).ThenInclude(x => x.Tag)
@@ -89,10 +92,11 @@ public sealed class TransactionService : ITransactionService
 
     public async Task<TransactionDto> CreateAsync(CreateTransactionDto dto, CancellationToken ct = default)
     {
-        await using var dbTx = await _db.Database.BeginTransactionAsync(ct);
+        await using var db = _factory.CreateDbContext();
+        await using var dbTx = await db.Database.BeginTransactionAsync(ct);
         try
         {
-            var account = await _db.Accounts.FirstOrDefaultAsync(a => a.Id == dto.AccountId, ct)
+            var account = await db.Accounts.FirstOrDefaultAsync(a => a.Id == dto.AccountId, ct)
                           ?? throw new KeyNotFoundException($"Account {dto.AccountId} not found.");
 
             var transaction = new Transaction
@@ -110,7 +114,7 @@ public sealed class TransactionService : ITransactionService
 
             account.CurrentBalance += dto.Type == TransactionType.Income ? dto.Amount : -dto.Amount;
 
-            _db.Transactions.Add(transaction);
+            db.Transactions.Add(transaction);
 
             if (dto.TagIds is { Count: > 0 })
                 transaction.TransactionTags = dto.TagIds.Select(tid => new TransactionTag
@@ -119,10 +123,16 @@ public sealed class TransactionService : ITransactionService
                     TagId = tid
                 }).ToList();
 
-            await _db.SaveChangesAsync(ct);
+            await db.SaveChangesAsync(ct);
             await dbTx.CommitAsync(ct);
 
-            return MapToDto(transaction);
+            var saved = await db.Transactions
+                .Include(x => x.Account)
+                .Include(x => x.Category)
+                .Include(x => x.TransactionTags).ThenInclude(x => x.Tag)
+                .FirstAsync(x => x.Id == transaction.Id, ct);
+
+            return MapToDto(saved);
         }
         catch
         {
@@ -133,12 +143,13 @@ public sealed class TransactionService : ITransactionService
 
     public async Task<(TransactionDto From, TransactionDto To)> CreateTransferAsync(CreateTransferDto dto, CancellationToken ct = default)
     {
-        await using var dbTx = await _db.Database.BeginTransactionAsync(ct);
+        await using var db = _factory.CreateDbContext();
+        await using var dbTx = await db.Database.BeginTransactionAsync(ct);
         try
         {
-            var fromAccount = await _db.Accounts.FirstOrDefaultAsync(a => a.Id == dto.FromAccountId, ct)
+            var fromAccount = await db.Accounts.FirstOrDefaultAsync(a => a.Id == dto.FromAccountId, ct)
                               ?? throw new KeyNotFoundException($"Account {dto.FromAccountId} not found.");
-            var toAccount = await _db.Accounts.FirstOrDefaultAsync(a => a.Id == dto.ToAccountId, ct)
+            var toAccount = await db.Accounts.FirstOrDefaultAsync(a => a.Id == dto.ToAccountId, ct)
                             ?? throw new KeyNotFoundException($"Account {dto.ToAccountId} not found.");
 
             var fromTx = new Transaction
@@ -171,11 +182,20 @@ public sealed class TransactionService : ITransactionService
             fromAccount.CurrentBalance -= dto.Amount;
             toAccount.CurrentBalance += dto.Amount;
 
-            _db.Transactions.AddRange(fromTx, toTx);
-            await _db.SaveChangesAsync(ct);
+            db.Transactions.AddRange(fromTx, toTx);
+            await db.SaveChangesAsync(ct);
             await dbTx.CommitAsync(ct);
 
-            return (MapToDto(fromTx), MapToDto(toTx));
+            var savedFrom = await db.Transactions
+                .Include(x => x.Account)
+                .Include(x => x.TransactionTags).ThenInclude(x => x.Tag)
+                .FirstAsync(x => x.Id == fromTx.Id, ct);
+            var savedTo = await db.Transactions
+                .Include(x => x.Account)
+                .Include(x => x.TransactionTags).ThenInclude(x => x.Tag)
+                .FirstAsync(x => x.Id == toTx.Id, ct);
+
+            return (MapToDto(savedFrom), MapToDto(savedTo));
         }
         catch
         {
@@ -186,15 +206,16 @@ public sealed class TransactionService : ITransactionService
 
     public async Task<TransactionDto> UpdateAsync(UpdateTransactionDto dto, CancellationToken ct = default)
     {
-        await using var dbTx = await _db.Database.BeginTransactionAsync(ct);
+        await using var db = _factory.CreateDbContext();
+        await using var dbTx = await db.Database.BeginTransactionAsync(ct);
         try
         {
-            var entity = await _db.Transactions
-                                  .Include(x => x.TransactionTags)
-                                  .FirstOrDefaultAsync(x => x.Id == dto.Id, ct)
+            var entity = await db.Transactions
+                                 .Include(x => x.TransactionTags)
+                                 .FirstOrDefaultAsync(x => x.Id == dto.Id, ct)
                          ?? throw new KeyNotFoundException($"Transaction {dto.Id} not found.");
 
-            var account = await _db.Accounts.FirstOrDefaultAsync(a => a.Id == entity.AccountId, ct)!;
+            var account = await db.Accounts.FirstOrDefaultAsync(a => a.Id == entity.AccountId, ct);
             if (account is not null)
             {
                 account.CurrentBalance -= entity.Type == TransactionType.Income ? entity.Amount : -entity.Amount;
@@ -207,7 +228,7 @@ public sealed class TransactionService : ITransactionService
             entity.Notes = dto.Notes;
             entity.Type = dto.Type;
 
-            _db.TransactionTags.RemoveRange(entity.TransactionTags);
+            db.TransactionTags.RemoveRange(entity.TransactionTags);
             if (dto.TagIds is { Count: > 0 })
                 entity.TransactionTags = dto.TagIds.Select(tid => new TransactionTag
                 {
@@ -215,10 +236,16 @@ public sealed class TransactionService : ITransactionService
                     TagId = tid
                 }).ToList();
 
-            await _db.SaveChangesAsync(ct);
+            await db.SaveChangesAsync(ct);
             await dbTx.CommitAsync(ct);
 
-            return MapToDto(entity);
+            var saved = await db.Transactions
+                .Include(x => x.Account)
+                .Include(x => x.Category)
+                .Include(x => x.TransactionTags).ThenInclude(x => x.Tag)
+                .FirstAsync(x => x.Id == entity.Id, ct);
+
+            return MapToDto(saved);
         }
         catch
         {

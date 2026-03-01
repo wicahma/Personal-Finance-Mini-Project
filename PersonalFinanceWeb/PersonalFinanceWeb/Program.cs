@@ -86,6 +86,7 @@ builder.Services.AddScoped<IProfileClientService, ServerProfileClientService>();
 builder.Services.AddScoped<IAccountClientService, ServerAccountClientService>();
 builder.Services.AddScoped<ICategoryClientService, ServerCategoryClientService>();
 builder.Services.AddScoped<ITagClientService, ServerTagClientService>();
+builder.Services.AddScoped<ITransactionClientService, ServerTransactionClientService>();
 
 WebApplication? app = builder.Build();
 
