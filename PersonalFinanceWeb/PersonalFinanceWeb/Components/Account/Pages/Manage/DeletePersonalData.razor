@@ -13,28 +13,35 @@
 
 <StatusMessage Message="@message" />
 
-<h3>Delete Personal Data</h3>
+<div class="bg-base-surface border-2 border-base-border p-6">
+    <h2 class="text-lg font-black uppercase tracking-widest text-hot-pink mb-6">Delete personal data</h2>
 
-<div class="alert alert-warning" role="alert">
-    <p>
-        <strong>Deleting this data will permanently remove your account, and this cannot be recovered.</strong>
-    </p>
-</div>
+    <div class="border-2 border-vivid-yellow bg-base-bg text-vivid-yellow shadow-brutal-yellow px-4 py-3 mb-6 text-sm">
+        <strong class="font-black uppercase">Warning:</strong> Deleting this data will permanently remove your account and cannot be recovered.
+    </div>
 
-<div>
-    <EditForm Model="Input" FormName="delete-user" OnValidSubmit="OnValidSubmitAsync" method="post">
-        <DataAnnotationsValidator />
-        <ValidationSummary class="text-danger" role="alert" />
-        @if (requirePassword)
-        {
-            <div class="form-floating mb-3">
-                <InputText type="password" @bind-Value="Input.Password" id="Input.Password" class="form-control" autocomplete="current-password" aria-required="true" placeholder="Please enter your password." />
-                <label for="Input.Password" class="form-label">Password</label>
-                <ValidationMessage For="() => Input.Password" class="text-danger" />
-            </div>
-        }
-        <button class="w-100 btn btn-lg btn-danger" type="submit">Delete data and close my account</button>
-    </EditForm>
+    <div class="max-w-lg">
+        <EditForm Model="Input" FormName="delete-user" OnValidSubmit="OnValidSubmitAsync" method="post">
+            <DataAnnotationsValidator />
+            <ValidationSummary class="text-hot-pink text-sm mb-4 border-2 border-hot-pink bg-base-bg px-4 py-3" role="alert" />
+
+            @if (requirePassword)
+            {
+                <div class="mb-6">
+                    <label for="Input.Password" class="block text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">Confirm password</label>
+                    <InputText type="password" @bind-Value="Input.Password" id="Input.Password"
+                               class="w-full bg-base-bg border-2 border-base-border text-soft-white px-4 py-3 focus:outline-none focus:border-hot-pink transition-colors placeholder:text-gray-600"
+                               autocomplete="current-password" aria-required="true" placeholder="Enter your password to confirm" />
+                    <ValidationMessage For="() => Input.Password" class="text-hot-pink text-xs mt-1 block" />
+                </div>
+            }
+
+            <button type="submit"
+                    class="w-full bg-hot-pink text-white font-black uppercase tracking-widest py-3 border-2 border-black shadow-brutal-white hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-none active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all duration-100">
+                Delete data and close my account
+            </button>
+        </EditForm>
+    </div>
 </div>
 
 @code {

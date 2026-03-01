@@ -1,16 +1,17 @@
 @inherits LayoutComponentBase
 @layout PersonalFinanceWeb.Client.Layout.MainLayout
 
-<h1>Manage your account</h1>
+<div class="space-y-6">
+    <div>
+        <h1 class="text-3xl font-black uppercase tracking-tight text-soft-white">Account settings</h1>
+        <p class="text-gray-400 mt-1 text-sm font-medium tracking-wider">Manage your account preferences and security</p>
+    </div>
 
-<div>
-    <h2>Change your account settings</h2>
-    <hr />
-    <div class="row">
-        <div class="col-lg-3">
+    <div class="flex gap-8 items-start">
+        <div class="w-48 shrink-0">
             <ManageNavMenu />
         </div>
-        <div class="col-lg-9">
+        <div class="flex-1 min-w-0">
             @Body
         </div>
     </div>

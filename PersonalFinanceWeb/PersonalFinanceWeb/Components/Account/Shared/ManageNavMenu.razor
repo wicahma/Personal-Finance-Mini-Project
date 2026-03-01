@@ -3,32 +3,46 @@
 
 @inject SignInManager<ApplicationUser> SignInManager
 
-<ul class="nav nav-pills flex-column">
-    <li class="nav-item">
-        <NavLink class="nav-link" href="Account/Manage" Match="NavLinkMatch.All">Profile</NavLink>
-    </li>
-    <li class="nav-item">
-        <NavLink class="nav-link" href="Account/Manage/Email">Email</NavLink>
-    </li>
-    <li class="nav-item">
-        <NavLink class="nav-link" href="Account/Manage/ChangePassword">Password</NavLink>
-    </li>
+<nav class="flex flex-col gap-1">
+    <NavLink href="Account/Manage" Match="NavLinkMatch.All"
+             class="block px-3 py-2.5 text-xs font-bold uppercase tracking-widest text-gray-400 hover:text-soft-white hover:bg-white/5 border-l-2 border-transparent hover:border-base-border transition-all duration-100"
+             ActiveClass="!text-neon !border-neon bg-white/5">
+        Profile
+    </NavLink>
+    <NavLink href="Account/Manage/Email"
+             class="block px-3 py-2.5 text-xs font-bold uppercase tracking-widest text-gray-400 hover:text-soft-white hover:bg-white/5 border-l-2 border-transparent hover:border-base-border transition-all duration-100"
+             ActiveClass="!text-neon !border-neon bg-white/5">
+        Email
+    </NavLink>
+    <NavLink href="Account/Manage/ChangePassword"
+             class="block px-3 py-2.5 text-xs font-bold uppercase tracking-widest text-gray-400 hover:text-soft-white hover:bg-white/5 border-l-2 border-transparent hover:border-base-border transition-all duration-100"
+             ActiveClass="!text-neon !border-neon bg-white/5">
+        Password
+    </NavLink>
     @if (hasExternalLogins)
     {
-        <li class="nav-item">
-            <NavLink class="nav-link" href="Account/Manage/ExternalLogins">External logins</NavLink>
-        </li>
+        <NavLink href="Account/Manage/ExternalLogins"
+                 class="block px-3 py-2.5 text-xs font-bold uppercase tracking-widest text-gray-400 hover:text-soft-white hover:bg-white/5 border-l-2 border-transparent hover:border-base-border transition-all duration-100"
+                 ActiveClass="!text-neon !border-neon bg-white/5">
+            External logins
+        </NavLink>
     }
-    <li class="nav-item">
-        <NavLink class="nav-link" href="Account/Manage/TwoFactorAuthentication">Two-factor authentication</NavLink>
-    </li>
-    <li class="nav-item">
-        <NavLink class="nav-link" href="Account/Manage/Passkeys">Passkeys</NavLink>
-    </li>
-    <li class="nav-item">
-        <NavLink class="nav-link" href="Account/Manage/PersonalData">Personal data</NavLink>
-    </li>
-</ul>
+    <NavLink href="Account/Manage/TwoFactorAuthentication"
+             class="block px-3 py-2.5 text-xs font-bold uppercase tracking-widest text-gray-400 hover:text-soft-white hover:bg-white/5 border-l-2 border-transparent hover:border-base-border transition-all duration-100"
+             ActiveClass="!text-neon !border-neon bg-white/5">
+        Two-factor auth
+    </NavLink>
+    <NavLink href="Account/Manage/Passkeys"
+             class="block px-3 py-2.5 text-xs font-bold uppercase tracking-widest text-gray-400 hover:text-soft-white hover:bg-white/5 border-l-2 border-transparent hover:border-base-border transition-all duration-100"
+             ActiveClass="!text-neon !border-neon bg-white/5">
+        Passkeys
+    </NavLink>
+    <NavLink href="Account/Manage/PersonalData"
+             class="block px-3 py-2.5 text-xs font-bold uppercase tracking-widest text-gray-400 hover:text-soft-white hover:bg-white/5 border-l-2 border-transparent hover:border-base-border transition-all duration-100"
+             ActiveClass="!text-neon !border-neon bg-white/5">
+        Personal data
+    </NavLink>
+</nav>
 
 @code {
     private bool hasExternalLogins;

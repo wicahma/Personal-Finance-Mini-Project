@@ -21,42 +21,64 @@
 else
 {
     <StatusMessage Message="@message" />
-    <h3>Configure authenticator app</h3>
-    <div>
-        <p>To use an authenticator app go through the following steps:</p>
-        <ol class="list">
-            <li>
-                <p>
-                    Download a two-factor authenticator app like Microsoft Authenticator for
-                    <a href="https://go.microsoft.com/fwlink/?Linkid=825072">Android</a> and
-                    <a href="https://go.microsoft.com/fwlink/?Linkid=825073">iOS</a> or
-                    Google Authenticator for
-                    <a href="https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2&amp;hl=en">Android</a> and
-                    <a href="https://itunes.apple.com/us/app/google-authenticator/id388497605?mt=8">iOS</a>.
-                </p>
+
+    <div class="bg-base-surface border-2 border-base-border p-6 space-y-6">
+        <h2 class="text-lg font-black uppercase tracking-widest text-soft-white">Configure authenticator app</h2>
+
+        <p class="text-gray-400 text-sm">To use an authenticator app go through the following steps:</p>
+
+        <ol class="space-y-6 list-none">
+            <li class="flex gap-4">
+                <span class="shrink-0 w-7 h-7 bg-neon text-black text-xs font-black flex items-center justify-center border-2 border-black">1</span>
+                <div class="text-sm text-gray-300">
+                    <p>
+                        Download a two-factor authenticator app like
+                        <a href="https://go.microsoft.com/fwlink/?Linkid=825072" class="text-neon font-bold hover:text-soft-white transition-colors">Microsoft Authenticator for Android</a> /
+                        <a href="https://go.microsoft.com/fwlink/?Linkid=825073" class="text-neon font-bold hover:text-soft-white transition-colors">iOS</a>
+                        or
+                        <a href="https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2&amp;hl=en" class="text-neon font-bold hover:text-soft-white transition-colors">Google Authenticator for Android</a> /
+                        <a href="https://itunes.apple.com/us/app/google-authenticator/id388497605?mt=8" class="text-neon font-bold hover:text-soft-white transition-colors">iOS</a>.
+                    </p>
+                </div>
             </li>
-            <li>
-                <p>Scan the QR Code or enter this key <kbd>@sharedKey</kbd> into your two factor authenticator app. Spaces and casing do not matter.</p>
-                <div class="alert alert-info">Learn how to <a href="https://go.microsoft.com/fwlink/?Linkid=852423">enable QR code generation</a>.</div>
-                <div></div>
-                <div data-url="@authenticatorUri"></div>
+            <li class="flex gap-4">
+                <span class="shrink-0 w-7 h-7 bg-neon text-black text-xs font-black flex items-center justify-center border-2 border-black">2</span>
+                <div class="text-sm text-gray-300 space-y-3 flex-1">
+                    <p>
+                        Scan the QR Code or enter this key
+                        <kbd class="bg-base-bg border-2 border-base-border px-2 py-1 text-neon font-mono text-xs">@sharedKey</kbd>
+                        into your authenticator app. Spaces and casing do not matter.
+                    </p>
+                    <div class="border-2 border-neon bg-base-bg text-neon px-4 py-3 text-sm">
+                        <a href="https://go.microsoft.com/fwlink/?Linkid=852423" class="font-bold hover:text-soft-white transition-colors">Learn how to enable QR code generation.</a>
+                    </div>
+                    <div data-url="@authenticatorUri" class="border-2 border-base-border p-4 bg-white inline-block"></div>
+                </div>
             </li>
-            <li>
-                <p>
-                    Once you have scanned the QR code or input the key above, your two factor authentication app will provide you
-                    with a unique code. Enter the code in the confirmation box below.
-                </p>
-                <div class="row">
-                    <div class="col-xl-6">
+            <li class="flex gap-4">
+                <span class="shrink-0 w-7 h-7 bg-neon text-black text-xs font-black flex items-center justify-center border-2 border-black">3</span>
+                <div class="text-sm text-gray-300 flex-1 space-y-4">
+                    <p>
+                        Once you have scanned the QR code or input the key above, your two factor authentication app will provide you
+                        with a unique code. Enter the code in the confirmation box below.
+                    </p>
+                    <div class="max-w-sm">
                         <EditForm Model="Input" FormName="send-code" OnValidSubmit="OnValidSubmitAsync" method="post">
                             <DataAnnotationsValidator />
-                            <div class="form-floating mb-3">
-                                <InputText @bind-Value="Input.Code" id="Input.Code" class="form-control" autocomplete="off" placeholder="Enter the code" />
-                                <label for="Input.Code" class="control-label form-label">Verification Code</label>
-                                <ValidationMessage For="() => Input.Code" class="text-danger" />
+                            <ValidationSummary class="text-hot-pink text-sm mb-4 border-2 border-hot-pink bg-base-bg px-4 py-3" role="alert" />
+
+                            <div class="mb-5">
+                                <label for="Input.Code" class="block text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">Verification code</label>
+                                <InputText @bind-Value="Input.Code" id="Input.Code"
+                                           class="w-full bg-base-bg border-2 border-base-border text-soft-white px-4 py-3 focus:outline-none focus:border-neon transition-colors placeholder:text-gray-600 font-mono tracking-widest"
+                                           autocomplete="off" placeholder="000 000" />
+                                <ValidationMessage For="() => Input.Code" class="text-hot-pink text-xs mt-1 block" />
                             </div>
-                            <button type="submit" class="w-100 btn btn-lg btn-primary">Verify</button>
-                            <ValidationSummary class="text-danger" role="alert" />
+
+                            <button type="submit"
+                                    class="w-full bg-neon text-black font-black uppercase tracking-widest py-3 border-2 border-black shadow-brutal-green hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-none active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all duration-100">
+                                Verify
+                            </button>
                         </EditForm>
                     </div>
                 </div>

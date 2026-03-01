@@ -11,26 +11,37 @@
 
 <PageTitle>Recovery code verification</PageTitle>
 
-<h1>Recovery code verification</h1>
-<hr />
-<StatusMessage Message="@message" />
-<p>
-    You have requested to log in with a recovery code. This login will not be remembered until you provide
-    an authenticator app code at log in or disable 2FA and log in again.
-</p>
-<div class="row">
-    <div class="col-md-4">
-        <EditForm Model="Input" FormName="login-with-recovery-code" OnValidSubmit="OnValidSubmitAsync" method="post">
-            <DataAnnotationsValidator />
-            <ValidationSummary class="text-danger" role="alert" />
-            <div class="form-floating mb-3">
-                <InputText @bind-Value="Input.RecoveryCode" id="Input.RecoveryCode" class="form-control" autocomplete="off" placeholder="RecoveryCode" />
-                <label for="Input.RecoveryCode" class="form-label">Recovery Code</label>
-                <ValidationMessage For="() => Input.RecoveryCode" class="text-danger" />
-            </div>
-            <button type="submit" class="w-100 btn btn-lg btn-primary">Log in</button>
-        </EditForm>
+<div class="bg-base-surface border-2 border-vivid-yellow shadow-brutal-yellow p-8">
+    <h1 class="text-xl font-black uppercase tracking-widest text-soft-white mb-1">Recovery code</h1>
+    <p class="text-gray-500 text-xs uppercase tracking-widest mb-6">Log in with a backup recovery code</p>
+
+    <StatusMessage Message="@message" />
+
+    <div class="border-2 border-vivid-yellow bg-base-bg px-4 py-3 mb-6 text-sm text-vivid-yellow">
+        This login will not be remembered until you provide an authenticator code at next sign in or disable 2FA.
     </div>
+
+    <EditForm Model="Input" FormName="login-with-recovery-code" OnValidSubmit="OnValidSubmitAsync" method="post">
+        <DataAnnotationsValidator />
+        <ValidationSummary class="text-hot-pink text-sm mb-4 border-2 border-hot-pink bg-base-bg px-4 py-3" role="alert" />
+
+        <div class="mb-6">
+            <label for="Input.RecoveryCode" class="block text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">Recovery code</label>
+            <InputText @bind-Value="Input.RecoveryCode" id="Input.RecoveryCode"
+                       class="w-full bg-base-bg border-2 border-base-border text-soft-white px-4 py-3 focus:outline-none focus:border-vivid-yellow transition-colors placeholder:text-gray-600 font-mono tracking-widest"
+                       autocomplete="off" placeholder="XXXX-XXXX" />
+            <ValidationMessage For="() => Input.RecoveryCode" class="text-hot-pink text-xs mt-1 block" />
+        </div>
+
+        <button type="submit"
+                class="w-full bg-vivid-yellow text-black font-black uppercase tracking-widest py-3 border-2 border-black shadow-brutal-green hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-none active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all duration-100 mb-4">
+            Log in
+        </button>
+
+        <div class="flex flex-col gap-2 text-sm pt-4 border-t-2 border-base-border">
+            <a href="Account/Login" class="text-neon font-bold hover:text-soft-white transition-colors">&larr; Back to sign in</a>
+        </div>
+    </EditForm>
 </div>
 
 @code {

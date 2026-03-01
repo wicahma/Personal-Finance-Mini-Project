@@ -10,24 +10,34 @@
 
 <PageTitle>Profile</PageTitle>
 
-<h3>Profile</h3>
 <StatusMessage />
 
-<div class="row">
-    <div class="col-xl-6">
+<div class="bg-base-surface border-2 border-base-border p-6">
+    <h2 class="text-lg font-black uppercase tracking-widest text-soft-white mb-6">Profile</h2>
+    <div class="space-y-5 max-w-lg">
         <EditForm Model="Input" FormName="profile" OnValidSubmit="OnValidSubmitAsync" method="post">
             <DataAnnotationsValidator />
-            <ValidationSummary class="text-danger" role="alert" />
-            <div class="form-floating mb-3">
-                <input type="text" value="@username" id="username" class="form-control" placeholder="Choose your username." disabled />
-                <label for="username" class="form-label">Username</label>
+            <ValidationSummary class="text-hot-pink text-sm mb-4 border-2 border-hot-pink bg-base-bg px-4 py-3" role="alert" />
+
+            <div class="mb-5">
+                <label for="username" class="block text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">Username</label>
+                <input type="text" value="@username" id="username"
+                       class="w-full bg-base-bg border-2 border-base-border text-soft-white px-4 py-3 opacity-50 cursor-not-allowed"
+                       placeholder="No username set." disabled />
             </div>
-            <div class="form-floating mb-3">
-                <InputText @bind-Value="Input.PhoneNumber" id="Input.PhoneNumber" class="form-control" placeholder="Enter your phone number" />
-                <label for="Input.PhoneNumber" class="form-label">Phone number</label>
-                <ValidationMessage For="() => Input.PhoneNumber" class="text-danger" />
+
+            <div class="mb-6">
+                <label for="Input.PhoneNumber" class="block text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">Phone number</label>
+                <InputText @bind-Value="Input.PhoneNumber" id="Input.PhoneNumber"
+                           class="w-full bg-base-bg border-2 border-base-border text-soft-white px-4 py-3 focus:outline-none focus:border-neon transition-colors placeholder:text-gray-600"
+                           placeholder="Enter your phone number" />
+                <ValidationMessage For="() => Input.PhoneNumber" class="text-hot-pink text-xs mt-1 block" />
             </div>
-            <button type="submit" class="w-100 btn btn-lg btn-primary">Save</button>
+
+            <button type="submit"
+                    class="w-full bg-neon text-black font-black uppercase tracking-widest py-3 border-2 border-black shadow-brutal-green hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-none active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all duration-100">
+                Save
+            </button>
         </EditForm>
     </div>
 </div>

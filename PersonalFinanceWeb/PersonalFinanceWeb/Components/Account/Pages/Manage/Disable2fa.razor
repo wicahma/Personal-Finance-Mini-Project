@@ -10,22 +10,25 @@
 <PageTitle>Disable two-factor authentication (2FA)</PageTitle>
 
 <StatusMessage />
-<h3>Disable two-factor authentication (2FA)</h3>
 
-<div class="alert alert-warning" role="alert">
-    <p>
-        <strong>This action only disables 2FA.</strong>
-    </p>
-    <p>
-        Disabling 2FA does not change the keys used in authenticator apps. If you wish to change the key
-        used in an authenticator app you should <a href="Account/Manage/ResetAuthenticator">reset your authenticator keys.</a>
-    </p>
-</div>
+<div class="bg-base-surface border-2 border-base-border p-6">
+    <h2 class="text-lg font-black uppercase tracking-widest text-soft-white mb-6">Disable two-factor authentication</h2>
 
-<div>
+    <div class="border-2 border-vivid-yellow bg-base-bg text-vivid-yellow shadow-brutal-yellow px-4 py-3 mb-6 text-sm space-y-2">
+        <p><strong class="font-black uppercase">Note:</strong> This action only disables 2FA.</p>
+        <p>
+            Disabling 2FA does not change the keys used in authenticator apps. If you wish to change the key
+            used in an authenticator app you should
+            <a href="Account/Manage/ResetAuthenticator" class="font-bold underline hover:text-soft-white transition-colors">reset your authenticator keys.</a>
+        </p>
+    </div>
+
     <form @formname="disable-2fa" @onsubmit="OnSubmitAsync" method="post">
         <AntiforgeryToken />
-        <button class="btn btn-danger" type="submit">Disable 2FA</button>
+        <button type="submit"
+                class="px-6 py-2.5 bg-hot-pink text-white font-black uppercase tracking-widest text-sm border-2 border-black shadow-brutal-white hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-none active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all duration-100">
+            Disable 2FA
+        </button>
     </form>
 </div>
 

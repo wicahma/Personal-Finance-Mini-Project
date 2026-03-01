@@ -9,21 +9,29 @@
 <PageTitle>Personal Data</PageTitle>
 
 <StatusMessage />
-<h3>Personal Data</h3>
 
-<div class="row">
-    <div class="col-md-6">
-        <p>Your account contains personal data that you have given us. This page allows you to download or delete that data.</p>
-        <p>
-            <strong>Deleting this data will permanently remove your account, and this cannot be recovered.</strong>
+<div class="bg-base-surface border-2 border-base-border p-6">
+    <h2 class="text-lg font-black uppercase tracking-widest text-soft-white mb-4">Personal data</h2>
+    <div class="space-y-4 max-w-lg">
+        <p class="text-gray-400 text-sm">Your account contains personal data that you have given us. This page allows you to download or delete that data.</p>
+        <p class="text-sm text-vivid-yellow font-semibold">
+            Deleting this data will permanently remove your account and cannot be recovered.
         </p>
-        <form action="Account/Manage/DownloadPersonalData" method="post">
-            <AntiforgeryToken />
-            <button class="btn btn-primary" type="submit">Download</button>
-        </form>
-        <p>
-            <a href="Account/Manage/DeletePersonalData" class="btn btn-danger">Delete</a>
-        </p>
+
+        <div class="flex items-center gap-4 pt-2">
+            <form action="Account/Manage/DownloadPersonalData" method="post">
+                <AntiforgeryToken />
+                <button type="submit"
+                        class="px-5 py-2.5 border-2 border-base-border text-soft-white font-bold uppercase tracking-widest text-sm hover:border-soft-white hover:shadow-brutal-white hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all duration-100">
+                    Download
+                </button>
+            </form>
+
+            <a href="Account/Manage/DeletePersonalData"
+               class="px-5 py-2.5 bg-hot-pink text-white font-black uppercase tracking-widest text-sm border-2 border-black shadow-brutal-white hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-none active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all duration-100">
+                Delete
+            </a>
+        </div>
     </div>
 </div>
 

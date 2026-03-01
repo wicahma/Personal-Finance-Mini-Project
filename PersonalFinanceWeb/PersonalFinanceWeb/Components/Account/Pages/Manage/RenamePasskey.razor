@@ -8,27 +8,37 @@
 @inject UserManager<ApplicationUser> UserManager
 @inject IdentityRedirectManager RedirectManager
 
-<EditForm Model="Input" OnValidSubmit="Rename" FormName="rename-passkey" method="post">
-    <DataAnnotationsValidator />
-    @if (passkey?.Name is { } name)
-    {
-        <h4>Enter a new name for your "@name" passkey</h4>
-    }
-    else
-    {
-        <h4>Enter a name for your passkey</h4>
-    }
-    <hr />
-    <ValidationSummary class="text-danger" role="alert" />
-    <div class="form-floating mb-3">
-        <InputText @bind-Value="Input.Name" id="Input.Name" class="form-control" aria-required="true" placeholder="My passkey" />
-        <label for="Input.Name" class="form-label">Passkey name</label>
-        <ValidationMessage For="() => Input.Name" class="text-danger" />
-    </div>
-    <div>
-        <button type="submit" class="w-100 btn btn-lg btn-primary">Continue</button>
-    </div>
-</EditForm>
+<div class="bg-base-surface border-2 border-base-border p-6">
+    <EditForm Model="Input" OnValidSubmit="Rename" FormName="rename-passkey" method="post">
+        <DataAnnotationsValidator />
+
+        @if (passkey?.Name is { } name)
+        {
+            <h2 class="text-lg font-black uppercase tracking-widest text-soft-white mb-6">Rename "@name"</h2>
+        }
+        else
+        {
+            <h2 class="text-lg font-black uppercase tracking-widest text-soft-white mb-6">Name your passkey</h2>
+        }
+
+        <ValidationSummary class="text-hot-pink text-sm mb-4 border-2 border-hot-pink bg-base-bg px-4 py-3" role="alert" />
+
+        <div class="max-w-sm space-y-5">
+            <div>
+                <label for="Input.Name" class="block text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">Passkey name</label>
+                <InputText @bind-Value="Input.Name" id="Input.Name"
+                           class="w-full bg-base-bg border-2 border-base-border text-soft-white px-4 py-3 focus:outline-none focus:border-neon transition-colors placeholder:text-gray-600"
+                           aria-required="true" placeholder="My passkey" />
+                <ValidationMessage For="() => Input.Name" class="text-hot-pink text-xs mt-1 block" />
+            </div>
+
+            <button type="submit"
+                    class="w-full bg-neon text-black font-black uppercase tracking-widest py-3 border-2 border-black shadow-brutal-green hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-none active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all duration-100">
+                Save
+            </button>
+        </div>
+    </EditForm>
+</div>
 
 @code {
     private ApplicationUser? user;

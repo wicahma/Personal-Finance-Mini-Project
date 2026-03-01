@@ -11,38 +11,43 @@
 
 <PageTitle>Two-factor authentication</PageTitle>
 
-<h1>Two-factor authentication</h1>
-<hr />
-<StatusMessage Message="@message" />
-<p>Your login is protected with an authenticator app. Enter your authenticator code below.</p>
-<div class="row">
-    <div class="col-md-4">
-        <EditForm Model="Input" FormName="login-with-2fa" OnValidSubmit="OnValidSubmitAsync" method="post">
-            <input type="hidden" name="ReturnUrl" value="@ReturnUrl" />
-            <input type="hidden" name="RememberMe" value="@RememberMe" />
-            <DataAnnotationsValidator />
-            <ValidationSummary class="text-danger" role="alert" />
-            <div class="form-floating mb-3">
-                <InputText @bind-Value="Input.TwoFactorCode" id="Input.TwoFactorCode" class="form-control" autocomplete="off" />
-                <label for="Input.TwoFactorCode" class="form-label">Authenticator code</label>
-                <ValidationMessage For="() => Input.TwoFactorCode" class="text-danger" />
-            </div>
-            <div class="checkbox mb-3">
-                <label for="remember-machine" class="form-label">
-                    <InputCheckbox @bind-Value="Input.RememberMachine" />
-                    Remember this machine
-                </label>
-            </div>
-            <div>
-                <button type="submit" class="w-100 btn btn-lg btn-primary">Log in</button>
-            </div>
-        </EditForm>
-    </div>
+<div class="bg-base-surface border-2 border-neon shadow-brutal-green p-8">
+    <h1 class="text-xl font-black uppercase tracking-widest text-soft-white mb-1">Two-factor authentication</h1>
+    <p class="text-gray-500 text-xs uppercase tracking-widest mb-6">Enter your authenticator code to continue</p>
+
+    <StatusMessage Message="@message" />
+
+    <EditForm Model="Input" FormName="login-with-2fa" OnValidSubmit="OnValidSubmitAsync" method="post">
+        <input type="hidden" name="ReturnUrl" value="@ReturnUrl" />
+        <input type="hidden" name="RememberMe" value="@RememberMe" />
+        <DataAnnotationsValidator />
+        <ValidationSummary class="text-hot-pink text-sm mb-4 border-2 border-hot-pink bg-base-bg px-4 py-3" role="alert" />
+
+        <div class="mb-4">
+            <label for="Input.TwoFactorCode" class="block text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">Authenticator code</label>
+            <InputText @bind-Value="Input.TwoFactorCode" id="Input.TwoFactorCode"
+                       class="w-full bg-base-bg border-2 border-base-border text-soft-white px-4 py-3 focus:outline-none focus:border-neon transition-colors placeholder:text-gray-600 font-mono tracking-widest"
+                       autocomplete="off" placeholder="000 000" />
+            <ValidationMessage For="() => Input.TwoFactorCode" class="text-hot-pink text-xs mt-1 block" />
+        </div>
+
+        <div class="mb-6">
+            <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-400">
+                <InputCheckbox @bind-Value="Input.RememberMachine" class="w-4 h-4 border-2 border-base-border bg-base-bg accent-neon" />
+                Remember this machine
+            </label>
+        </div>
+
+        <button type="submit"
+                class="w-full bg-neon text-black font-black uppercase tracking-widest py-3 border-2 border-black shadow-brutal-green hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-none active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all duration-100 mb-4">
+            Log in
+        </button>
+
+        <div class="flex flex-col gap-2 text-sm pt-4 border-t-2 border-base-border">
+            <a href="Account/LoginWithRecoveryCode?ReturnUrl=@ReturnUrl" class="text-neon font-bold hover:text-soft-white transition-colors">Use a recovery code instead</a>
+        </div>
+    </EditForm>
 </div>
-<p>
-    Don't have access to your authenticator device? You can
-    <a href="Account/LoginWithRecoveryCode?ReturnUrl=@ReturnUrl">log in with a recovery code</a>.
-</p>
 
 @code {
     private string? message;

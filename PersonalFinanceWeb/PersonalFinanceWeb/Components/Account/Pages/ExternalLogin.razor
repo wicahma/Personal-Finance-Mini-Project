@@ -18,30 +18,34 @@
 
 <PageTitle>Register</PageTitle>
 
-<StatusMessage Message="@message" />
-<h1>Register</h1>
-<h2>Associate your @ProviderDisplayName account.</h2>
-<hr />
+<div class="bg-base-surface border-2 border-neon shadow-brutal-green p-8">
+    <h1 class="text-xl font-black uppercase tracking-widest text-soft-white mb-1">Complete registration</h1>
+    <p class="text-gray-500 text-xs uppercase tracking-widest mb-6">Associate your @ProviderDisplayName account</p>
 
-<div  class="alert alert-info">
-    You've successfully authenticated with <strong>@ProviderDisplayName</strong>.
-    Please enter an email address for this site below and click the Register button to finish
-    logging in.
-</div>
+    <StatusMessage Message="@message" />
 
-<div class="row">
-    <div class="col-md-4">
-        <EditForm Model="Input" OnValidSubmit="OnValidSubmitAsync" FormName="confirmation" method="post">
-            <DataAnnotationsValidator />
-            <ValidationSummary class="text-danger" role="alert" />
-            <div class="form-floating mb-3">
-                <InputText @bind-Value="Input.Email" id="Input.Email" class="form-control" autocomplete="email" placeholder="Please enter your email." />
-                <label for="Input.Email" class="form-label">Email</label>
-                <ValidationMessage For="() => Input.Email" />
-            </div>
-            <button type="submit" class="w-100 btn btn-lg btn-primary">Register</button>
-        </EditForm>
+    <div class="border-2 border-neon bg-base-bg px-4 py-3 mb-6 text-sm text-neon">
+        You've successfully authenticated with <strong>@ProviderDisplayName</strong>.
+        Please enter an email address for this site below and click Register to finish.
     </div>
+
+    <EditForm Model="Input" OnValidSubmit="OnValidSubmitAsync" FormName="confirmation" method="post">
+        <DataAnnotationsValidator />
+        <ValidationSummary class="text-hot-pink text-sm mb-4 border-2 border-hot-pink bg-base-bg px-4 py-3" role="alert" />
+
+        <div class="mb-6">
+            <label for="Input.Email" class="block text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">Email</label>
+            <InputText @bind-Value="Input.Email" id="Input.Email"
+                       class="w-full bg-base-bg border-2 border-base-border text-soft-white px-4 py-3 focus:outline-none focus:border-neon transition-colors placeholder:text-gray-600"
+                       autocomplete="email" placeholder="name@example.com" />
+            <ValidationMessage For="() => Input.Email" class="text-hot-pink text-xs mt-1 block" />
+        </div>
+
+        <button type="submit"
+                class="w-full bg-neon text-black font-black uppercase tracking-widest py-3 border-2 border-black shadow-brutal-green hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-none active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all duration-100">
+            Register
+        </button>
+    </EditForm>
 </div>
 
 @code {
