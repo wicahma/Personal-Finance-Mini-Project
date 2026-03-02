@@ -176,13 +176,17 @@ public sealed class TransactionService : ITransactionService
                 CreatedBy = dto.UserProfileId.ToString()
             };
 
-            fromTx.TransferPairId = toTx.Id;
-            toTx.TransferPairId = fromTx.Id;
-
             fromAccount.CurrentBalance -= dto.Amount;
             toAccount.CurrentBalance += dto.Amount;
 
+            // Insert both without TransferPairId first to avoid the circular FK dependency
+            // that EF detects when both rows reference each other before either exists.
             db.Transactions.AddRange(fromTx, toTx);
+            await db.SaveChangesAsync(ct);
+
+            // Now that both rows exist, link them to each other and save the update.
+            fromTx.TransferPairId = toTx.Id;
+            toTx.TransferPairId = fromTx.Id;
             await db.SaveChangesAsync(ct);
             await dbTx.CommitAsync(ct);
 
